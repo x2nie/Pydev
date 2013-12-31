@@ -1,3 +1,15 @@
+/******************************************************************************
+* Copyright (C) 2012-2013  Hussain Bohra and others
+*
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*     Hussain Bohra <hussain.bohra@tavant.com> - initial API and implementation
+*     Fabio Zadrozny <fabiofz@gmail.com>       - ongoing maintenance
+******************************************************************************/
 package org.python.pydev.debug.newconsole;
 
 import java.util.ArrayList;
@@ -9,14 +21,14 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
-import org.python.pydev.core.Tuple;
-import org.python.pydev.core.callbacks.ICallback;
-import org.python.pydev.core.docutils.StringUtils;
 import org.python.pydev.core.log.Log;
 import org.python.pydev.debug.model.PyStackFrame;
 import org.python.pydev.debug.model.XMLUtils;
-import org.python.pydev.dltk.console.IScriptConsoleCommunication;
-import org.python.pydev.dltk.console.InterpreterResponse;
+import org.python.pydev.shared_core.callbacks.ICallback;
+import org.python.pydev.shared_core.string.StringUtils;
+import org.python.pydev.shared_core.structure.Tuple;
+import org.python.pydev.shared_interactive_console.console.IScriptConsoleCommunication;
+import org.python.pydev.shared_interactive_console.console.InterpreterResponse;
 
 /**
  * This class allows console to communicate with python backend by using the existing
@@ -29,7 +41,7 @@ public class PydevDebugConsoleCommunication implements IScriptConsoleCommunicati
 
     private int TIMEOUT = PydevConsoleConstants.CONSOLE_TIMEOUT;
 
-    String EMPTY = (String) StringUtils.EMPTY;
+    String EMPTY = StringUtils.EMPTY;
 
     /**
      * Signals that the next command added should be sent as an input to the server.
@@ -57,10 +69,8 @@ public class PydevDebugConsoleCommunication implements IScriptConsoleCommunicati
         consoleFrame = new PydevDebugConsoleFrame();
     }
 
-    public void execInterpreter(
-        final String command,
-        final ICallback<Object, InterpreterResponse> onResponseReceived,
-        final ICallback<Object, Tuple<String, String>> onContentsReceived) {
+    public void execInterpreter(final String command, final ICallback<Object, InterpreterResponse> onResponseReceived,
+            final ICallback<Object, Tuple<String, String>> onContentsReceived) {
 
         nextResponse = null;
         if (waitingForInput) {
@@ -75,14 +85,12 @@ public class PydevDebugConsoleCommunication implements IScriptConsoleCommunicati
                 protected IStatus run(IProgressMonitor monitor) {
                     PyStackFrame frame = consoleFrame.getLastSelectedFrame();
                     if (frame == null) {
-                        nextResponse = new InterpreterResponse(
-                            EMPTY,
-                            "[Invalid Frame]: Please select frame to connect the console." + "\n",
-                            false,
-                            false);
+                        nextResponse = new InterpreterResponse(EMPTY,
+                                "[Invalid Frame]: Please select frame to connect the console." + "\n", false, false);
                         return Status.CANCEL_STATUS;
                     }
-                    final EvaluateDebugConsoleExpression evaluateDebugConsoleExpression = new EvaluateDebugConsoleExpression(frame);
+                    final EvaluateDebugConsoleExpression evaluateDebugConsoleExpression = new EvaluateDebugConsoleExpression(
+                            frame);
                     evaluateDebugConsoleExpression.executeCommand(command);
                     String result = evaluateDebugConsoleExpression.waitForCommand();
                     try {
@@ -92,10 +100,10 @@ public class PydevDebugConsoleCommunication implements IScriptConsoleCommunicati
                             return Status.CANCEL_STATUS;
 
                         } else {
-                            EvaluateDebugConsoleExpression.PydevDebugConsoleMessage consoleMessage = XMLUtils.getConsoleMessage(result);
-                            nextResponse = new InterpreterResponse(consoleMessage.getOutputMessage().toString(), consoleMessage
-                                .getErrorMessage()
-                                .toString(), consoleMessage.isMore(), false);
+                            EvaluateDebugConsoleExpression.PydevDebugConsoleMessage consoleMessage = XMLUtils
+                                    .getConsoleMessage(result);
+                            nextResponse = new InterpreterResponse(consoleMessage.getOutputMessage().toString(),
+                                    consoleMessage.getErrorMessage().toString(), consoleMessage.isMore(), false);
                         }
                     } catch (CoreException e) {
                         Log.log(e);

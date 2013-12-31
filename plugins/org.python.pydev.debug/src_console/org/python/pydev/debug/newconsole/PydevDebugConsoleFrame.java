@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2005-2011 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2005-2012 by Appcelerator, Inc. All Rights Reserved.
  * Licensed under the terms of the Eclipse Public License (EPL).
  * Please see the license.txt included with this distribution for details.
  * Any modifications to this file must keep this entire header intact.
@@ -26,16 +26,15 @@ public class PydevDebugConsoleFrame {
      */
     private boolean isLinkedWithDebug = true;
 
-    
     /**
      * @return the currently selected / suspended frame.
      */
-    public static PyStackFrame getCurrentSuspendedPyStackFrame(){
+    public static PyStackFrame getCurrentSuspendedPyStackFrame() {
         IAdaptable context = DebugUITools.getDebugContext();
-        
-        if(context instanceof PyStackFrame){
+
+        if (context instanceof PyStackFrame) {
             PyStackFrame stackFrame = (PyStackFrame) context;
-            if(!stackFrame.isTerminated() && stackFrame.isSuspended()){
+            if (!stackFrame.isTerminated() && stackFrame.isSuspended()) {
                 return stackFrame;
             }
         }
@@ -53,15 +52,15 @@ public class PydevDebugConsoleFrame {
         if (lastSelectedFrame == null) {
             lastSelectedFrame = getCurrentSuspendedPyStackFrame();
         }
-        
-        if (isLinkedWithDebug){
+
+        if (isLinkedWithDebug) {
             lastSelectedFrame = getCurrentSuspendedPyStackFrame();
             return lastSelectedFrame;
         } else { // Console is not linked with debug selection
-            if (lastSelectedFrame == null) { 
+            if (lastSelectedFrame == null) {
                 return null;
             } else {
-                if (lastSelectedFrame.getThread().isSuspended()){
+                if (lastSelectedFrame.getThread().isSuspended()) {
                     // Debugger is currently paused
                     return lastSelectedFrame;
                 } else { // return null if debugger is not paused
@@ -70,14 +69,13 @@ public class PydevDebugConsoleFrame {
             }
         }
     }
-    
-    
+
     /**
      * Enable/Disable linking of the debug console with the suspended frame.
      * 
      * @param isLinkedWithDebug
      */
-    public void linkWithDebugSelection(boolean isLinkedWithDebug){
+    public void linkWithDebugSelection(boolean isLinkedWithDebug) {
         this.isLinkedWithDebug = isLinkedWithDebug;
     }
 

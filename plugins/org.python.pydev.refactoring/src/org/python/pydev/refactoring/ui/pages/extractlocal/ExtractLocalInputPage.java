@@ -1,3 +1,18 @@
+/******************************************************************************
+* Copyright (C) 2007-2013  IFS Institute for Software and others
+*
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Original authors:
+*     Reto Schuettel
+*     Robin Stocker
+* Contributors:
+*     Fabio Zadrozny <fabiofz@gmail.com>       - initial implementation
+*     Andrew Ferrazzutti <aferrazz@redhat.com> - ongoing maintenance
+******************************************************************************/
 /*
  * Copyright (C) 2007  Reto Schuettel, Robin Stocker
  *
@@ -19,13 +34,13 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.python.pydev.core.docutils.StringUtils;
 import org.python.pydev.plugin.preferences.PydevPrefs;
 import org.python.pydev.refactoring.coderefactoring.extractlocal.ExtractLocalRefactoring;
 import org.python.pydev.refactoring.coderefactoring.extractlocal.ExtractLocalRequestProcessor;
 import org.python.pydev.refactoring.messages.Messages;
 import org.python.pydev.refactoring.ui.pages.core.eclipse.RowLayouter;
 import org.python.pydev.refactoring.ui.pages.core.eclipse.TextInputWizardPage;
+import org.python.pydev.shared_core.string.StringUtils;
 
 public class ExtractLocalInputPage extends TextInputWizardPage {
     public static final String PAGE_NAME = "ExtractLocalInputPage"; //$NON-NLS-1$
@@ -55,25 +70,26 @@ public class ExtractLocalInputPage extends TextInputWizardPage {
 
         replaceDuplicates = new Button(result, SWT.CHECK);
         ExtractLocalRequestProcessor requestProcessor = getRequestProcessor();
-        replaceDuplicates.setText(
-                StringUtils.format("Also replace &duplicates (%s references)?", requestProcessor.getDuplicatesSize()));
-        
+        replaceDuplicates.setText(StringUtils.format("Also replace &duplicates (%s references)?",
+                requestProcessor.getDuplicatesSize()));
+
         IPreferenceStore preferences = PydevPrefs.getPreferences();
         boolean replace = preferences.getBoolean(EXTRACT_LOCAL_REPLACE_DUPLICATES);
         replaceDuplicates.setSelection(replace);
         requestProcessor.setReplaceDuplicates(replace);
         replaceDuplicates.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 getRequestProcessor().setReplaceDuplicates(replaceDuplicates.getSelection());
                 IPreferenceStore preferences = PydevPrefs.getPreferences();
                 preferences.setValue(EXTRACT_LOCAL_REPLACE_DUPLICATES, replaceDuplicates.getSelection());
             }
-            
+
         });
         GridData gridData = new GridData(GridData.FILL_HORIZONTAL);
         gridData.horizontalSpan = 2;
         replaceDuplicates.setLayoutData(gridData);
-        
+
         layouter.perform(label, text, 1);
 
         Dialog.applyDialogFont(result);
@@ -82,6 +98,7 @@ public class ExtractLocalInputPage extends TextInputWizardPage {
     /*
      * @see org.eclipse.jdt.internal.ui.refactoring.TextInputWizardPage#textModified(java.lang.String)
      */
+    @Override
     protected void textModified(String text) {
         getRequestProcessor().setVariableName(text);
         super.textModified(text);
@@ -90,6 +107,7 @@ public class ExtractLocalInputPage extends TextInputWizardPage {
     /*
      * @see org.eclipse.jdt.internal.ui.refactoring.TextInputWizardPage#validateTextField(String)
      */
+    @Override
     protected RefactoringStatus validateTextField(String text) {
         return getExtractlocalRefactoring().checkVarName(text);
     }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2005-2011 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2005-2012 by Appcelerator, Inc. All Rights Reserved.
  * Licensed under the terms of the Eclipse Public License (EPL).
  * Please see the license.txt included with this distribution for details.
  * Any modifications to this file must keep this entire header intact.
@@ -18,72 +18,55 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.python.pydev.debug.ui.actions.PyBreakpointRulerAction;
 import org.python.pydev.editor.PyEdit;
 
-public class PyToggleBreakpointsTarget implements IToggleBreakpointsTarget,IToggleBreakpointsTargetExtension {
-	
+public class PyToggleBreakpointsTarget implements IToggleBreakpointsTarget, IToggleBreakpointsTargetExtension {
 
-	PyToggleBreakpointsTarget(){
-	}
-	
-	// --------------- All others point to this 2 methods!
-	public void toggleBreakpoints(IWorkbenchPart part, ISelection selection)
-			throws CoreException {
-		if(part instanceof PyEdit && selection instanceof TextSelection){
-			TextSelection textSelection = (TextSelection) selection;
-			PyEdit pyEdit = (PyEdit) part;
-			int startLine = textSelection.getStartLine();
-			
-			List<IMarker> markersFromCurrentFile = PyBreakpointRulerAction.getMarkersFromCurrentFile(pyEdit, startLine);
-			if(markersFromCurrentFile.size() > 0){
-				PyBreakpointRulerAction.removeMarkers(markersFromCurrentFile);
-			}else{
-				PyBreakpointRulerAction.addBreakpointMarker(pyEdit.getDocument(), startLine+1, pyEdit);
-			}
-			
-		}
-		
-	}
+    PyToggleBreakpointsTarget() {
+    }
 
-	
-	public boolean canToggleBreakpoints(IWorkbenchPart part,
-			ISelection selection) {
-		return selection instanceof TextSelection && part instanceof PyEdit;
-	}
+    // --------------- All others point to this 2 methods!
+    public void toggleBreakpoints(IWorkbenchPart part, ISelection selection) throws CoreException {
+        if (part instanceof PyEdit && selection instanceof TextSelection) {
+            TextSelection textSelection = (TextSelection) selection;
+            PyEdit pyEdit = (PyEdit) part;
+            int startLine = textSelection.getStartLine();
 
-	
-	public void toggleLineBreakpoints(IWorkbenchPart part, ISelection selection)
-			throws CoreException {
-		toggleBreakpoints(part, selection);
-	}
+            List<IMarker> markersFromCurrentFile = PyBreakpointRulerAction.getMarkersFromCurrentFile(pyEdit, startLine);
+            if (markersFromCurrentFile.size() > 0) {
+                PyBreakpointRulerAction.removeMarkers(markersFromCurrentFile);
+            } else {
+                PyBreakpointRulerAction.addBreakpointMarker(pyEdit.getDocument(), startLine + 1, pyEdit);
+            }
 
-	
-	public boolean canToggleLineBreakpoints(IWorkbenchPart part,
-			ISelection selection) {
-		return canToggleBreakpoints(part, selection);
-	}
+        }
 
-	
-	public void toggleMethodBreakpoints(IWorkbenchPart part,
-			ISelection selection) throws CoreException {
-		toggleBreakpoints(part, selection);
-	}
+    }
 
-	
-	public boolean canToggleMethodBreakpoints(IWorkbenchPart part,
-			ISelection selection) {
-		return canToggleBreakpoints(part, selection);
-	}
+    public boolean canToggleBreakpoints(IWorkbenchPart part, ISelection selection) {
+        return selection instanceof TextSelection && part instanceof PyEdit;
+    }
 
-	
-	public void toggleWatchpoints(IWorkbenchPart part, ISelection selection)
-			throws CoreException {
-		toggleBreakpoints(part, selection);
-	}
+    public void toggleLineBreakpoints(IWorkbenchPart part, ISelection selection) throws CoreException {
+        toggleBreakpoints(part, selection);
+    }
 
-	
-	public boolean canToggleWatchpoints(IWorkbenchPart part,
-			ISelection selection) {
-		return canToggleBreakpoints(part, selection);
-	}
+    public boolean canToggleLineBreakpoints(IWorkbenchPart part, ISelection selection) {
+        return canToggleBreakpoints(part, selection);
+    }
 
+    public void toggleMethodBreakpoints(IWorkbenchPart part, ISelection selection) throws CoreException {
+        toggleBreakpoints(part, selection);
+    }
+
+    public boolean canToggleMethodBreakpoints(IWorkbenchPart part, ISelection selection) {
+        return canToggleBreakpoints(part, selection);
+    }
+
+    public void toggleWatchpoints(IWorkbenchPart part, ISelection selection) throws CoreException {
+        toggleBreakpoints(part, selection);
+    }
+
+    public boolean canToggleWatchpoints(IWorkbenchPart part, ISelection selection) {
+        return canToggleBreakpoints(part, selection);
+    }
 
 }

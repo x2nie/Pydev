@@ -14,9 +14,9 @@ import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.jgraph.graph.DefaultGraphCell;
 import org.python.pydev.core.IPythonNature;
-import org.python.pydev.core.Tuple;
 import org.python.pydev.parser.PyParser;
 import org.python.pydev.parser.jython.SimpleNode;
+import org.python.pydev.shared_core.parsing.BaseParser.ParseOutput;
 
 /**
  * Starts the parser and its visitor (GraphVisitor)
@@ -26,22 +26,27 @@ import org.python.pydev.parser.jython.SimpleNode;
  */
 public class ASTGraph {
 
-    public Tuple<SimpleNode, Throwable> parseFile(String fileName) throws FileNotFoundException, IOException, Throwable {
+    public ParseOutput parseFile(String fileName) throws FileNotFoundException, IOException,
+            Throwable {
         File pythonSource = new File(fileName);
         BufferedReader in = new BufferedReader(new FileReader(pythonSource));
-
-        String line = "";
         StringBuilder source = new StringBuilder();
-        while ((line = in.readLine()) != null) {
-            source.append(line);
-            source.append("\n");
+        try {
+            String line = "";
+            while ((line = in.readLine()) != null) {
+                source.append(line);
+                source.append("\n");
+            }
+        } finally {
+            in.close();
         }
 
         IDocument doc = new Document(source.toString());
-        Tuple<SimpleNode, Throwable> objects = PyParser.reparseDocument(
-                new PyParser.ParserInfo(doc, IPythonNature.LATEST_GRAMMAR_VERSION));
-        if (objects.o2 != null)
-            throw objects.o2;
+        ParseOutput objects = PyParser.reparseDocument(new PyParser.ParserInfo(doc,
+                IPythonNature.LATEST_GRAMMAR_VERSION));
+        if (objects.error != null) {
+            throw objects.error;
+        }
         return objects;
     }
 

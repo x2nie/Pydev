@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2005-2011 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2005-2012 by Appcelerator, Inc. All Rights Reserved.
  * Licensed under the terms of the Eclipse Public License (EPL).
  * Please see the license.txt included with this distribution for details.
  * Any modifications to this file must keep this entire header intact.
@@ -35,7 +35,8 @@ public class EnableDisableBreakpointRulerAction extends AbstractBreakpointRulerA
         setBreakpoint(breakpoint);
         if (breakpoint == null) {
             setEnabled(false);
-        }else{
+            setText("&Disable Breakpoint");
+        } else {
             setEnabled(true);
             try {
                 boolean enabled = breakpoint.isEnabled();
@@ -52,6 +53,7 @@ public class EnableDisableBreakpointRulerAction extends AbstractBreakpointRulerA
         final IBreakpoint breakpoint = getBreakpoint();
         if (breakpoint != null) {
             new Job("Enabling / Disabling Breakpoint") { //$NON-NLS-1$
+                @Override
                 protected IStatus run(IProgressMonitor monitor) {
                     try {
                         breakpoint.setEnabled(!breakpoint.isEnabled());
@@ -59,7 +61,8 @@ public class EnableDisableBreakpointRulerAction extends AbstractBreakpointRulerA
                     } catch (final CoreException e) {
                         Display.getDefault().asyncExec(new Runnable() {
                             public void run() {
-                                ErrorDialog.openError(getTextEditor().getEditorSite().getShell(), "Enabling/disabling breakpoints",
+                                ErrorDialog.openError(getTextEditor().getEditorSite().getShell(),
+                                        "Enabling/disabling breakpoints",
                                         "Exceptions occurred enabling disabling the breakpoint", e.getStatus());
                             }
                         });

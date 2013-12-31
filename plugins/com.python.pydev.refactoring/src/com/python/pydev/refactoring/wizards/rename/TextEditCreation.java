@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2005-2011 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2005-2013 by Appcelerator, Inc. All Rights Reserved.
  * Licensed under the terms of the Eclipse Public License (EPL).
  * Please see the license.txt included with this distribution for details.
  * Any modifications to this file must keep this entire header intact.
@@ -8,6 +8,7 @@ package com.python.pydev.refactoring.wizards.rename;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -16,26 +17,31 @@ import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.Assert;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.ltk.core.refactoring.CompositeChange;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.TextChange;
-import org.eclipse.ltk.core.refactoring.TextFileChange;
 import org.eclipse.ltk.core.refactoring.participants.CheckConditionsContext;
 import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
 import org.eclipse.text.edits.TextEdit;
 import org.eclipse.text.edits.TextEditGroup;
-import org.python.pydev.core.REF;
-import org.python.pydev.core.Tuple;
-import org.python.pydev.core.docutils.StringUtils;
-import org.python.pydev.core.structure.FastStringBuffer;
+import org.python.pydev.core.FileUtilsFileBuffer;
+import org.python.pydev.core.FullRepIterable;
+import org.python.pydev.core.IPythonNature;
 import org.python.pydev.editor.codecompletion.revisited.modules.ASTEntryWithSourceModule;
 import org.python.pydev.editor.refactoring.RefactoringRequest;
 import org.python.pydev.editorinput.PySourceLocatorBase;
 import org.python.pydev.parser.visitors.scope.ASTEntry;
-import org.python.pydev.refactoring.core.base.PyDocumentChange;
-import org.python.pydev.refactoring.core.base.PyTextFileChange;
+import org.python.pydev.shared_core.callbacks.ICallback;
+import org.python.pydev.shared_core.io.FileUtils;
+import org.python.pydev.shared_core.string.FastStringBuffer;
+import org.python.pydev.shared_core.string.StringUtils;
+import org.python.pydev.shared_core.structure.Tuple;
 
 import com.python.pydev.analysis.scopeanalysis.AstEntryScopeAnalysisConstants;
 import com.python.pydev.refactoring.changes.PyRenameResourceChange;
@@ -49,22 +55,22 @@ import com.python.pydev.refactoring.wizards.IRefactorRenameProcess;
  * 
  * @author Fabio
  */
-public class TextEditCreation {
+public abstract class TextEditCreation {
 
     /**
      * New name for the variable renamed
      */
-    private String inputName;
+    protected String inputName;
 
     /**
      * Initial name of renamed variable
      */
-    private String initialName;
+    protected String initialName;
 
     /**
      * Name of the module where the rename was requested
      */
-    private String moduleName;
+    protected String moduleName;
 
     /**
      * Document where the rename was requested
@@ -77,11 +83,6 @@ public class TextEditCreation {
     private List<IRefactorRenameProcess> processes;
 
     /**
-     * Change object with all the changes that will be done in the rename
-     */
-    private CompositeChange fChange;
-
-    /**
      * Status of the refactoring. Should be updated to contain errors.
      */
     private RefactoringStatus status;
@@ -91,7 +92,7 @@ public class TextEditCreation {
      * occurrences to be renamed
      */
     private Map<Tuple<String, File>, HashSet<ASTEntry>> fileOccurrences;
-    
+
     /**
      * Occurrences to be renamed in the current module.
      */
@@ -99,14 +100,19 @@ public class TextEditCreation {
 
     private IFile currentFile;
 
+    /**
+     * Only for tests
+     */
+    public static ICallback<IFile, File> createWorkspaceFile;
+
     public TextEditCreation(String initialName, String inputName, String moduleName, IDocument currentDoc,
-            List<IRefactorRenameProcess> processes, RefactoringStatus status, CompositeChange fChange, IFile currentFile) {
+            List<IRefactorRenameProcess> processes, RefactoringStatus status, IFile currentFile) {
+        Assert.isNotNull(inputName);
         this.initialName = initialName;
         this.inputName = inputName;
         this.moduleName = moduleName;
         this.currentDoc = currentDoc;
         this.processes = processes;
-        this.fChange = fChange;
         this.status = status;
         this.currentFile = currentFile;
     }
@@ -122,86 +128,100 @@ public class TextEditCreation {
                 break;
             }
             HashSet<ASTEntry> occurrences = p.getOccurrences();
-            if(docOccurrences == null){
+            if (docOccurrences == null) {
                 docOccurrences = occurrences;
-            }else{
+            } else {
                 docOccurrences.addAll(occurrences);
             }
-            
+
             Map<Tuple<String, File>, HashSet<ASTEntry>> occurrencesInOtherFiles = p.getOccurrencesInOtherFiles();
-            if(fileOccurrences == null){
+            if (fileOccurrences == null) {
                 fileOccurrences = occurrencesInOtherFiles;
-            }else{
+            } else {
                 //iterate in a copy
-                for (Map.Entry<Tuple<String, File>, HashSet<ASTEntry>> entry : 
-                        new HashMap<Tuple<String, File>, HashSet<ASTEntry>>(occurrencesInOtherFiles).entrySet()) {
+                for (Map.Entry<Tuple<String, File>, HashSet<ASTEntry>> entry : new HashMap<Tuple<String, File>, HashSet<ASTEntry>>(
+                        occurrencesInOtherFiles).entrySet()) {
                     HashSet<ASTEntry> set = occurrencesInOtherFiles.get(entry.getKey());
-                    if(set == null){
+                    if (set == null) {
                         occurrencesInOtherFiles.put(entry.getKey(), entry.getValue());
-                    }else{
+                    } else {
                         set.addAll(entry.getValue());
                     }
                 }
             }
         }
 
-        createCurrModuleChange();
-        createOtherFileChanges();
+        createCurrModuleChange(request);
+        createOtherFileChanges(request);
     }
 
     /**
      * Create the changes for references in other modules.
+     * @param request 
      * 
      * @param fChange the 'root' change.
      * @param status the status of the change
      * @param editsAlreadyCreated 
      */
-    private void createOtherFileChanges() {
+    private void createOtherFileChanges(RefactoringRequest request) {
 
         for (Map.Entry<Tuple<String, File>, HashSet<ASTEntry>> entry : fileOccurrences.entrySet()) {
             //key = module name, IFile for the module (__init__ file may be found if it is a package)
             Tuple<String, File> tup = entry.getKey();
 
             //now, let's make the mapping from the filesystem to the Eclipse workspace
-            IFile workspaceFile = null; 
-            try{
+            IFile workspaceFile = null;
+            IPath path = null;
+            IDocument doc = null;
+            try {
                 workspaceFile = new PySourceLocatorBase().getWorkspaceFile(tup.o2);
-                if(workspaceFile == null){
-                    status.addWarning(StringUtils.format("Error. Unable to resolve the file:\n" +
-                            "%s\n" +
-                            "to a file in the Eclipse workspace.",
-                            tup.o2));
+                if (workspaceFile == null) {
+                    status.addWarning(StringUtils.format(
+                            "Error. Unable to resolve the file:\n" + "%s\n"
+                                    + "to a file in the Eclipse workspace.", tup.o2));
                     continue;
                 }
-            }catch(IllegalStateException e){
+                path = workspaceFile.getFullPath();
+            } catch (IllegalStateException e) {
                 //this can happen on tests (but if not on tests, we want to re-throw it
                 String message = e.getMessage();
-                if(message == null || !message.equals("Workspace is closed.")){
-                    throw e; 
+                if (message == null || !message.equals("Workspace is closed.")) {
+                    throw e;
                 }
-                //otherwise, let's just keep going in the test...
-                continue;
+
+                //otherwise, we're in tests: just keep going...
+                path = Path.fromOSString(tup.o2.getAbsolutePath());
+                doc = new Document(FileUtils.getFileContents(tup.o2));
+
+                workspaceFile = createWorkspaceFile.call(tup.o2);
             }
-                
+
             //check the text changes
             HashSet<ASTEntry> astEntries = filterAstEntries(entry.getValue(), AST_ENTRIES_FILTER_TEXT);
             if (astEntries.size() > 0) {
-                IDocument docFromResource = REF.getDocFromResource(workspaceFile);
-                TextFileChange fileChange = new PyTextFileChange("RenameChange: " + inputName, workspaceFile);
+                if (doc == null) {
+                    doc = FileUtilsFileBuffer.getDocFromResource(workspaceFile);
+                }
+                List<Tuple<List<TextEdit>, String>> renameEdits = getAllRenameEdits(doc, astEntries, path,
+                        request.nature);
+                if (status.hasFatalError()) {
+                    return;
+                }
+                if (renameEdits.size() > 0) {
 
-                MultiTextEdit rootEdit = new MultiTextEdit();
-                fileChange.setEdit(rootEdit);
-                fileChange.setKeepPreviewEdits(true);
+                    Tuple<TextChange, MultiTextEdit> textFileChange = getTextFileChange(workspaceFile, doc);
+                    TextChange docChange = textFileChange.o1;
+                    MultiTextEdit rootEdit = textFileChange.o2;
 
-                List<Tuple<TextEdit, String>> renameEdits = getAllRenameEdits(docFromResource, astEntries);
-                fillEditsInDocChange(fileChange, rootEdit, renameEdits);
+                    fillEditsInDocChange(docChange, rootEdit, renameEdits);
+                }
             }
 
             //now, check for file changes
             astEntries = filterAstEntries(entry.getValue(), AST_ENTRIES_FILTER_FILE);
             if (astEntries.size() > 0) {
                 IResource resourceToRename = workspaceFile;
-                String newName = inputName + ".py";
+                String newName = inputName;
 
                 //if we have an __init__ file but the initial token is not an __init__ file, it means
                 //that we have to rename the folder that contains the __init__ file
@@ -209,21 +229,27 @@ public class TextEditCreation {
                     resourceToRename = resourceToRename.getParent();
                     newName = inputName;
 
-                    if (!resourceToRename.getName().equals(initialName)) {
-                        status
-                                .addFatalError(StringUtils
-                                        .format(
-                                                "Error. The package that was found (%s) for renaming does not match the initial token found (%s)",
-                                                resourceToRename.getName(), initialName));
+                    if (!resourceToRename.getName().equals(FullRepIterable.getLastPart(initialName))) {
+                        status.addFatalError(org.python.pydev.shared_core.string.StringUtils
+                                .format("Error. The package that was found (%s) for renaming does not match the initial token found (%s)",
+                                        resourceToRename.getName(), initialName));
                         return;
                     }
                 }
 
-                fChange.add(new PyRenameResourceChange(resourceToRename, newName, StringUtils.format(
-                        "Renaming %s to %s", resourceToRename.getName(), inputName)));
+                createResourceChange(resourceToRename, newName, request);
             }
         }
     }
+
+    protected abstract PyRenameResourceChange createResourceChange(IResource resourceToRename, String newName,
+            RefactoringRequest request);
+
+    /**
+     * TextChange docChange, MultiTextEdit rootEdit
+     * @param currentDoc 
+     */
+    protected abstract Tuple<TextChange, MultiTextEdit> getTextFileChange(IFile workspaceFile, IDocument currentDoc);
 
     private final static int AST_ENTRIES_FILTER_TEXT = 1;
 
@@ -254,25 +280,24 @@ public class TextEditCreation {
      * @param fChange tho 'root' change.
      * @param editsAlreadyCreated 
      */
-    private void createCurrModuleChange() {
-        TextChange docChange;
-        if(this.currentFile != null){
-            docChange = new PyTextFileChange("Current module: " + moduleName, this.currentFile);
-        }else{
-            //used for tests
-            docChange = PyDocumentChange.create("Current module: " + moduleName, this.currentDoc);
-        }
-        if (docOccurrences.size() == 0) {
+    private void createCurrModuleChange(RefactoringRequest request) {
+        if (docOccurrences.size() == 0 && !(request.isModuleRenameRefactoringRequest())) {
             status.addFatalError("No occurrences found.");
             return;
         }
 
-        MultiTextEdit rootEdit = new MultiTextEdit();
-        docChange.setEdit(rootEdit);
-        docChange.setKeepPreviewEdits(true);
+        Tuple<TextChange, MultiTextEdit> textFileChange = getTextFileChange(this.currentFile, this.currentDoc);
+        TextChange docChange = textFileChange.o1;
+        MultiTextEdit rootEdit = textFileChange.o2;
 
-        List<Tuple<TextEdit, String>> renameEdits = getAllRenameEdits(currentDoc, docOccurrences);
-        fillEditsInDocChange(docChange, rootEdit, renameEdits);
+        List<Tuple<List<TextEdit>, String>> renameEdits = getAllRenameEdits(currentDoc, docOccurrences,
+                this.currentFile != null ? this.currentFile.getFullPath() : null, request.nature);
+        if (status.hasFatalError()) {
+            return;
+        }
+        if (renameEdits.size() > 0) {
+            fillEditsInDocChange(docChange, rootEdit, renameEdits);
+        }
     }
 
     /**
@@ -284,16 +309,13 @@ public class TextEditCreation {
      * @param renameEdits
      */
     private void fillEditsInDocChange(TextChange docChange, MultiTextEdit rootEdit,
-            List<Tuple<TextEdit, String>> renameEdits) {
+            List<Tuple<List<TextEdit>, String>> renameEdits) {
+        Assert.isTrue(renameEdits.size() > 0);
         try {
-            boolean addedEdit = false;
-            for (Tuple<TextEdit, String> t : renameEdits) {
-                addedEdit = true;
-                rootEdit.addChild(t.o1);
-                docChange.addTextEditGroup(new TextEditGroup(t.o2, t.o1));
-            }
-            if (addedEdit) {
-                fChange.add(docChange);
+            for (Tuple<List<TextEdit>, String> t : renameEdits) {
+                TextEdit[] arr = t.o1.toArray(new TextEdit[t.o1.size()]);
+                rootEdit.addChildren(arr);
+                docChange.addTextEditGroup(new TextEditGroup(t.o2, arr));
             }
         } catch (RuntimeException e) {
             //StringBuffer buf = new StringBuffer("Found occurrences:");
@@ -320,7 +342,7 @@ public class TextEditCreation {
      * the new name to be set in the replace
      * 
      * @param offset the offset marking the place where the replace should happen.
-     * @return a TextEdit correponding to a rename.
+     * @return a TextEdit corresponding to a rename.
      */
     protected TextEdit createRenameEdit(int offset) {
         return new ReplaceEdit(offset, initialName.length(), inputName);
@@ -333,12 +355,15 @@ public class TextEditCreation {
      * @param occurrences the occurrences found
      * @param doc the doc where the occurrences were found
      * @param occurrences 
+     * @param workspaceFile may be null!
+     * @param nature 
      * @return a list of tuples with the TextEdit and the description for that edit.
      */
-    protected List<Tuple<TextEdit, String>> getAllRenameEdits(IDocument doc, HashSet<ASTEntry> occurrences) {
+    protected List<Tuple<List<TextEdit>, String>> getAllRenameEdits(IDocument doc, HashSet<ASTEntry> occurrences,
+            IPath workspaceFile, IPythonNature nature) {
         Set<Integer> s = new HashSet<Integer>();
 
-        List<Tuple<TextEdit, String>> ret = new ArrayList<Tuple<TextEdit, String>>();
+        List<Tuple<List<TextEdit>, String>> ret = new ArrayList<>();
         //occurrences = sortOccurrences(occurrences);
 
         FastStringBuffer entryBuf = new FastStringBuffer();
@@ -356,20 +381,55 @@ public class TextEditCreation {
             } else {
                 entryBuf.append("Change: ");
             }
-            entryBuf.append(initialName);
+            entryBuf.appendObject(initialName);
             entryBuf.append(" >> ");
-            entryBuf.append(inputName);
+            entryBuf.appendObject(inputName);
             entryBuf.append(" (line:");
             entryBuf.append(entry.node.beginLine);
             entryBuf.append(")");
-
             int offset = AbstractRenameRefactorProcess.getOffset(doc, entry);
             if (!s.contains(offset)) {
                 s.add(offset);
-                ret.add(new Tuple<TextEdit, String>(createRenameEdit(offset), entryBuf.toString()));
+
+                if (entry instanceof IRefactorCustomEntry) {
+                    IRefactorCustomEntry iRefactorCustomEntry = (IRefactorCustomEntry) entry;
+                    List<TextEdit> edits = iRefactorCustomEntry.createRenameEdit(doc, initialName,
+                            inputName, status, workspaceFile, nature);
+                    ret.add(new Tuple<List<TextEdit>, String>(edits, entryBuf.toString()));
+                    entry.setAdditionalInfo(AstEntryScopeAnalysisConstants.AST_ENTRY_REPLACE_EDIT, edits);
+                    if (status.hasFatalError()) {
+                        return ret;
+                    }
+
+                } else {
+                    checkExpectedInput(doc, entry.node.beginLine, offset, initialName, status, workspaceFile);
+                    if (status.hasFatalError()) {
+                        return ret;
+                    }
+                    List<TextEdit> edits = Arrays.asList(createRenameEdit(offset));
+                    entry.setAdditionalInfo(AstEntryScopeAnalysisConstants.AST_ENTRY_REPLACE_EDIT, edits);
+                    ret.add(new Tuple<List<TextEdit>, String>(edits, entryBuf.toString()));
+                }
             }
         }
         return ret;
+    }
+
+    public static void checkExpectedInput(IDocument doc, int line, int offset, String initialName,
+            RefactoringStatus status, IPath workspaceFile) {
+        try {
+            String string = doc.get(offset, initialName.length());
+            if (!(string.equals(initialName))) {
+                status.addFatalError(StringUtils
+                        .format("Error: file %s changed during analysis.\nExpected doc to contain: '%s' and it contained: '%s' at offset: %s (line: %s).",
+                                workspaceFile != null ? workspaceFile : "has", initialName, string, offset, line));
+                return;
+            }
+        } catch (BadLocationException e) {
+            status.addFatalError(StringUtils
+                    .format("Error: file %s changed during analysis.\nExpected doc to contain: '%s' at offset: %s (line: %s).",
+                            workspaceFile != null ? workspaceFile : "has", initialName, offset, line));
+        }
     }
 
 }

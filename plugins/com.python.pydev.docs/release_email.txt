@@ -1,20 +1,57 @@
-PyDev VERSION Released
+PyDev 3.2.0 Released
 
 
 Hi All,
 
-PyDev VERSION has been released
+PyDev 3.2.0 has been released
 
-Details on PyDev: http://pydev.org 
+Details on PyDev: http://pydev.org
+
 Details on its development: http://pydev.blogspot.com
+
+LiClipse (PyDev standalone with goodies such as support for Django Templates, Mako Templates, Html, Javascript, etc): http://brainwy.github.io/liclipse/
+
 
 Release Highlights:
 -------------------------------
 
+* **Important**: PyDev requires Eclipse 3.8 or 4.3 onwards and Java 7! For older versions, keep using PyDev 2.x.
 
-HIGHLIGHTS
+* **General**:
 
+    * Added option to sort imports on save.
+    
+    * Showing dialog suggesting user to customize settings in Eclipse which are more suitable for PyDev.
+    
+    * Memory improvements on situations where an OutOfMemoryError could happen.
+    
+    * Search references (Ctrl+Shift+G) when initial is on external module works (for matches in workspace).
 
+* **Rename refactoring**:
+
+    * Added option to rename module without updating references.
+    
+    * Bugfixes.
+
+* **Performance**:
+
+    * Code completion: Builtins gotten from a shell are now cached for subsequent requests.
+    
+    * Doing a full build (reindex) is faster.
+
+* **Debugger**:
+
+    * Improvements on stackless integration.
+    
+    * Providing a view which shows the current caught exception.
+    
+    * Providing way to ignore current caught exception.
+    
+    * Providing option to show progress on taskbar when breakpoint is hit to get the users attention (windows 7).
+    
+    * Fixed issue in while getting referrers when getting __dict__ and having an exception. 
+
+    
 
 What is PyDev?
 ---------------------------
@@ -24,16 +61,13 @@ PyDev is a plugin that enables users to use Eclipse for Python, Jython and IronP
 
 Cheers,
 
--- 
+--
 Fabio Zadrozny
 ------------------------------------------------------
 Software Developer
 
-Appcelerator
-http://appcelerator.com/
-
-Aptana
-http://aptana.com/
+LiClipse
+http://brainwy.github.io/liclipse
 
 PyDev - Python Development Environment for Eclipse
 http://pydev.org

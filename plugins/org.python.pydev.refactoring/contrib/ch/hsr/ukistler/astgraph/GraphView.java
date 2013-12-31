@@ -26,8 +26,8 @@ import org.jgraph.graph.DefaultGraphModel;
 import org.jgraph.graph.GraphConstants;
 import org.jgraph.graph.GraphLayoutCache;
 import org.jgraph.graph.GraphModel;
-import org.python.pydev.core.Tuple;
 import org.python.pydev.parser.jython.SimpleNode;
+import org.python.pydev.shared_core.parsing.BaseParser.ParseOutput;
 
 public class GraphView extends JFrame {
 
@@ -198,10 +198,10 @@ public class GraphView extends JFrame {
 
     private void loadGraph(String fileName) throws FileNotFoundException, IOException, Throwable {
         ASTGraph ast = new ASTGraph();
-        Tuple<SimpleNode, Throwable> objects = ast.parseFile(fileName);
+        ParseOutput objects = ast.parseFile(fileName);
 
         graph.setGraphLayoutCache(new GraphLayoutCache());
-        DefaultGraphCell[] cells = ast.generateTree(objects.o1);
+        DefaultGraphCell[] cells = ast.generateTree((SimpleNode) objects.ast);
 
         graph.getGraphLayoutCache().insert(cells);
         graph.clearSelection();
@@ -223,13 +223,16 @@ public class GraphView extends JFrame {
     }
 
     class PNGFilter extends javax.swing.filechooser.FileFilter {
+        @Override
         public boolean accept(File file) {
-            if (file.isDirectory())
+            if (file.isDirectory()) {
                 return true;
+            }
             String filename = file.getName();
             return filename.endsWith(".png");
         }
 
+        @Override
         public String getDescription() {
             return "PNG image (*.png)";
         }
@@ -237,13 +240,16 @@ public class GraphView extends JFrame {
 
     class PythonFilter extends javax.swing.filechooser.FileFilter {
 
+        @Override
         public boolean accept(File file) {
-            if (file.isDirectory())
+            if (file.isDirectory()) {
                 return true;
+            }
             String filename = file.getName();
             return filename.endsWith(".py");
         }
 
+        @Override
         public String getDescription() {
             return "Python Source code (*.py)";
         }

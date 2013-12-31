@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2005-2011 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2005-2013 by Appcelerator, Inc. All Rights Reserved.
  * Licensed under the terms of the Eclipse Public License (EPL).
  * Please see the license.txt included with this distribution for details.
  * Any modifications to this file must keep this entire header intact.
@@ -42,354 +42,371 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.SelectionDialog;
 import org.eclipse.ui.internal.WorkbenchMessages;
-import org.python.pydev.core.StringMatcher;
 import org.python.pydev.debug.model.PyExceptionBreakPointManager;
 import org.python.pydev.debug.ui.actions.PyExceptionListProvider;
+import org.python.pydev.shared_core.string.StringMatcher;
 
 public class PyConfigureExceptionDialog extends SelectionDialog {
 
-	protected DefaultFilterMatcher fFilterMatcher = new DefaultFilterMatcher();
-	protected boolean updateInThread = true;
+    protected DefaultFilterMatcher fFilterMatcher = new DefaultFilterMatcher();
+    protected boolean updateInThread = true;
 
-	// the visual selection widget group
-	private Text filterPatternField;
-	private Text addNewExceptionField;
+    // the visual selection widget group
+    private Text filterPatternField;
+    private Text addNewExceptionField;
 
-	// providers for populating this dialog
-	private ILabelProvider labelProvider;
-	private IStructuredContentProvider contentProvider;
-	private String filterPattern;
+    // providers for populating this dialog
+    private ILabelProvider labelProvider;
+    private IStructuredContentProvider contentProvider;
+    private String filterPattern;
 
-	// the root element to populate the viewer with
-	private Object inputElement;
+    // the root element to populate the viewer with
+    private Object inputElement;
 
-	private FilterJob filterJob;
+    private FilterJob filterJob;
 
-	// the visual selection widget group
-	CheckboxTableViewer listViewer;
+    // the visual selection widget group
+    CheckboxTableViewer listViewer;
 
-	// sizing constants
-	private final static int SIZING_SELECTION_WIDGET_HEIGHT = 250;
-	private final static int SIZING_SELECTION_WIDGET_WIDTH = 300;
+    // sizing constants
+    private final static int SIZING_SELECTION_WIDGET_HEIGHT = 250;
+    private final static int SIZING_SELECTION_WIDGET_WIDTH = 300;
 
-	// enable/disable breaking on the caught
-	private Button uncaughtExceptionCheck;
-	private Button caughtExceptionCheck;
+    // enable/disable breaking on the caught
+    private Button uncaughtExceptionCheck;
     private boolean handleCaughtExceptions;
+
+    private Button caughtExceptionCheck;
     private boolean handleUncaughtExceptions;
 
-	protected static String SELECT_ALL_TITLE = WorkbenchMessages.SelectionDialog_selectLabel;
-	protected static String DESELECT_ALL_TITLE = WorkbenchMessages.SelectionDialog_deselectLabel;
+    private Button stopOnExceptionsHandledInSameContextCheck;
+    private boolean stopOnExceptionsHandledInSameContext;
 
-	public PyConfigureExceptionDialog(Shell parentShell, Object input,
-			IStructuredContentProvider contentProvider,
-			ILabelProvider labelProvider, String message) {
-		super(parentShell);
-		setTitle(WorkbenchMessages.ListSelection_title);
-		this.inputElement = input;
-		this.contentProvider = contentProvider;
-		this.labelProvider = labelProvider;
-		if (message != null) {
-			setMessage(message);
-		} else {
-			setMessage(WorkbenchMessages.ListSelection_message);
-		}
-	}
+    private Button ignoreExceptionsThrownInLinesWithIgnoreExceptionCheck;
+    private boolean ignoreExceptionsThrownInLinesWithIgnoreException;
 
-	/**
-	 * 
-	 * @param composite
-	 *            the parent composite
-	 * @return the message label
-	 */
-	protected Label createMessageArea(Composite composite) {
-		Label filterLabel = new Label(composite, SWT.NONE);
-		filterLabel.setLayoutData(new GridData(GridData.BEGINNING,
-				GridData.CENTER, false, false, 2, 1));
-		filterLabel.setText("Enter a filter (* = any number of "
-				+ "characters, ? = any single character)"
-				+ "\nor an empty string for no filtering:");
+    protected static String SELECT_ALL_TITLE = WorkbenchMessages.SelectionDialog_selectLabel;
+    protected static String DESELECT_ALL_TITLE = WorkbenchMessages.SelectionDialog_deselectLabel;
 
-		filterPatternField = new Text(composite, SWT.BORDER);
-		filterPatternField.setLayoutData(new GridData(GridData.FILL,
-				GridData.CENTER, true, false));
+    public PyConfigureExceptionDialog(Shell parentShell, Object input, IStructuredContentProvider contentProvider,
+            ILabelProvider labelProvider, String message) {
+        super(parentShell);
+        setTitle(WorkbenchMessages.ListSelection_title);
+        this.inputElement = input;
+        this.contentProvider = contentProvider;
+        this.labelProvider = labelProvider;
+        if (message != null) {
+            setMessage(message);
+        } else {
+            setMessage(WorkbenchMessages.ListSelection_message);
+        }
+    }
 
-		return filterLabel;
-	}
+    /**
+     * 
+     * @param composite
+     *            the parent composite
+     * @return the message label
+     */
+    @Override
+    protected Label createMessageArea(Composite composite) {
+        Label filterLabel = new Label(composite, SWT.NONE);
+        filterLabel.setLayoutData(new GridData(GridData.BEGINNING, GridData.CENTER, false, false, 2, 1));
+        filterLabel.setText("Enter a filter (* = any number of " + "characters, ? = any single character)"
+                + "\nor an empty string for no filtering:");
 
-	/**
-	 * Add the selection and deselection buttons to the dialog.
-	 * 
-	 * @param composite
-	 *            org.eclipse.swt.widgets.Composite
-	 */
-	protected void createSelectionButtons(Composite composite) {
-		Composite buttonComposite = new Composite(composite, SWT.NONE);
-		GridLayout layout = new GridLayout();
-		layout.numColumns = 0;
-		layout.marginWidth = 0;
-		layout.horizontalSpacing = convertHorizontalDLUsToPixels(IDialogConstants.HORIZONTAL_SPACING);
-		buttonComposite.setLayout(layout);
-		buttonComposite.setLayoutData(new GridData(SWT.END, SWT.TOP, true,
-				false));
+        filterPatternField = new Text(composite, SWT.BORDER);
+        filterPatternField.setLayoutData(new GridData(GridData.FILL, GridData.CENTER, true, false));
 
-		createSelectAll(buttonComposite);
-		createDeselectAll(buttonComposite);
-	}
+        return filterLabel;
+    }
 
-	/**
-	 * Creates a Select All button and its respective listener.
-	 * 
-	 * @param buttonComposite
-	 */
-	private void createSelectAll(Composite buttonComposite) {
-		Button selectButton = createButton(buttonComposite,
-				IDialogConstants.SELECT_ALL_ID, SELECT_ALL_TITLE, false);
+    /**
+     * Add the selection and deselection buttons to the dialog.
+     * 
+     * @param composite
+     *            org.eclipse.swt.widgets.Composite
+     */
+    protected void createSelectionButtons(Composite composite) {
+        Composite buttonComposite = new Composite(composite, SWT.NONE);
+        GridLayout layout = new GridLayout();
+        layout.numColumns = 0;
+        layout.marginWidth = 0;
+        layout.horizontalSpacing = convertHorizontalDLUsToPixels(IDialogConstants.HORIZONTAL_SPACING);
+        buttonComposite.setLayout(layout);
+        buttonComposite.setLayoutData(new GridData(SWT.END, SWT.TOP, true, false));
 
-		SelectionListener listener = new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				listViewer.setAllChecked(true);
-			}
-		};
-		selectButton.addSelectionListener(listener);
-	}
+        createSelectAll(buttonComposite);
+        createDeselectAll(buttonComposite);
+    }
 
-	/**
-	 * Creates a DeSelect All button and its respective listener.
-	 * 
-	 * @param buttonComposite
-	 */
-	private void createDeselectAll(Composite buttonComposite) {
-		SelectionListener listener;
-		Button deselectButton = createButton(buttonComposite,
-				IDialogConstants.DESELECT_ALL_ID, DESELECT_ALL_TITLE, false);
+    /**
+     * Creates a Select All button and its respective listener.
+     * 
+     * @param buttonComposite
+     */
+    private void createSelectAll(Composite buttonComposite) {
+        Button selectButton = createButton(buttonComposite, IDialogConstants.SELECT_ALL_ID, SELECT_ALL_TITLE, false);
 
-		listener = new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				listViewer.setAllChecked(false);
-				TableItem[] currentItems = listViewer.getTable().getItems();
-				for (TableItem tableItem : currentItems) {
-					removeFromSelectedElements(tableItem.getText());
-				}
-			}
-		};
-		deselectButton.addSelectionListener(listener);
-	}
+        SelectionListener listener = new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                listViewer.setAllChecked(true);
+            }
+        };
+        selectButton.addSelectionListener(listener);
+    }
 
-	@Override
-	protected Control createDialogArea(Composite parent) {
-		// page group
-		Composite composite = (Composite) super.createDialogArea(parent);
+    /**
+     * Creates a DeSelect All button and its respective listener.
+     * 
+     * @param buttonComposite
+     */
+    private void createDeselectAll(Composite buttonComposite) {
+        SelectionListener listener;
+        Button deselectButton = createButton(buttonComposite, IDialogConstants.DESELECT_ALL_ID, DESELECT_ALL_TITLE,
+                false);
 
-		initializeDialogUnits(composite);
+        listener = new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                listViewer.setAllChecked(false);
+                TableItem[] currentItems = listViewer.getTable().getItems();
+                for (TableItem tableItem : currentItems) {
+                    removeFromSelectedElements(tableItem.getText());
+                }
+            }
+        };
+        deselectButton.addSelectionListener(listener);
+    }
 
-		createMessageArea(composite);
+    @Override
+    protected Control createDialogArea(Composite parent) {
+        // page group
+        Composite composite = (Composite) super.createDialogArea(parent);
 
-		listViewer = CheckboxTableViewer.newCheckList(composite, SWT.BORDER);
-		GridData data = new GridData(GridData.FILL_BOTH);
-		data.heightHint = SIZING_SELECTION_WIDGET_HEIGHT;
-		data.widthHint = SIZING_SELECTION_WIDGET_WIDTH;
-		listViewer.getTable().setLayoutData(data);
+        initializeDialogUnits(composite);
 
-		listViewer.setLabelProvider(labelProvider);
-		listViewer.setContentProvider(contentProvider);
+        createMessageArea(composite);
 
-		createSelectionButtons(composite);
+        listViewer = CheckboxTableViewer.newCheckList(composite, SWT.BORDER);
+        GridData data = new GridData(GridData.FILL_BOTH);
+        data.heightHint = SIZING_SELECTION_WIDGET_HEIGHT;
+        data.widthHint = SIZING_SELECTION_WIDGET_WIDTH;
+        listViewer.getTable().setLayoutData(data);
 
-		initContent();
-		// initialize page
-		if (!getInitialElementSelections().isEmpty()) {
-			checkInitialSelections();
-		}
+        listViewer.setLabelProvider(labelProvider);
+        listViewer.setContentProvider(contentProvider);
 
-		Dialog.applyDialogFont(composite);
+        createSelectionButtons(composite);
 
-		getViewer().addFilter(new ViewerFilter() {
-			public boolean select(Viewer viewer, Object parentElement,
-					Object element) {
-				if (getCheckBoxTableViewer().getChecked(element)) {
-					addToSelectedElements(element);
-				}
-				return matchExceptionToShowInList(element);
-			}
-		});
+        initContent();
+        // initialize page
+        if (!getInitialElementSelections().isEmpty()) {
+            checkInitialSelections();
+        }
 
-		getCheckBoxTableViewer().addCheckStateListener(
-				new ICheckStateListener() {
-					public void checkStateChanged(CheckStateChangedEvent event) {
-						if (event.getChecked()) {
-							addToSelectedElements(event.getElement());
-						} else {
-							removeFromSelectedElements(event.getElement());
-						}
-					}
-				});
+        Dialog.applyDialogFont(composite);
 
-		createCustomExceptionUI(composite);
-		createCaughtUncaughtCheck(composite);
+        getViewer().addFilter(new ViewerFilter() {
+            @Override
+            public boolean select(Viewer viewer, Object parentElement, Object element) {
+                if (getCheckBoxTableViewer().getChecked(element)) {
+                    addToSelectedElements(element);
+                }
+                return matchExceptionToShowInList(element);
+            }
+        });
 
-		return composite;
-	}
+        getCheckBoxTableViewer().addCheckStateListener(new ICheckStateListener() {
+            public void checkStateChanged(CheckStateChangedEvent event) {
+                if (event.getChecked()) {
+                    addToSelectedElements(event.getElement());
+                } else {
+                    removeFromSelectedElements(event.getElement());
+                }
+            }
+        });
 
-	/**
-	 * @param composite
-	 * 
-	 *            Create a new text box and a button, which allows user to add
-	 *            custom exception. Attach a listener to the AddException Button
-	 */
-	private void createCustomExceptionUI(Composite composite) {
-		addNewExceptionField = new Text(composite, SWT.BORDER);
-		addNewExceptionField.setLayoutData(new GridData(GridData.FILL,
-				GridData.BEGINNING, true, false));
+        createCustomExceptionUI(composite);
+        createDealingWithExceptionsOptions(composite);
 
-		Button buttonAdd = new Button(composite, SWT.PUSH);
-		buttonAdd.setLayoutData(new GridData(GridData.END, GridData.END, true,
-				false));
-		buttonAdd.setText("Add Exception");
+        return composite;
+    }
 
-		SelectionListener listener = new SelectionAdapter() {
-			public void widgetSelected(SelectionEvent e) {
-				addCustomException();
-			}
-		};
-		buttonAdd.addSelectionListener(listener);
+    /**
+     * @param composite
+     * 
+     *            Create a new text box and a button, which allows user to add
+     *            custom exception. Attach a listener to the AddException Button
+     */
+    private void createCustomExceptionUI(Composite composite) {
+        addNewExceptionField = new Text(composite, SWT.BORDER);
+        addNewExceptionField.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false));
 
-	}
+        Button buttonAdd = new Button(composite, SWT.PUSH);
+        buttonAdd.setLayoutData(new GridData(GridData.END, GridData.END, true, false));
+        buttonAdd.setText("Add Exception");
 
-	/**
-	 * Add the new exception in the content pane
-	 * 
-	 */
-	private void addCustomException() {
-		String customException = addNewExceptionField.getText();
-		Object[] currentElements = contentProvider.getElements(inputElement);
+        SelectionListener listener = new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                addCustomException();
+            }
+        };
+        buttonAdd.addSelectionListener(listener);
 
-		ArrayList<Object> currentElementsList = new ArrayList<Object>();
-		for (int i = 0; i < currentElements.length; ++i) {
-			Object element = currentElements[i];
-			currentElementsList.add(element);
-		}
+    }
 
-		if (customException == "")
-			return;
+    /**
+     * Add the new exception in the content pane
+     * 
+     */
+    private void addCustomException() {
+        String customException = addNewExceptionField.getText().trim();
+        Object[] currentElements = contentProvider.getElements(inputElement);
 
-		if (!currentElementsList.contains(customException)) {
-			getViewer().add(customException);
-			addNewExceptionField.setText("");
-			((PyExceptionListProvider) contentProvider)
-					.addUserConfiguredException(customException);
-		} else {
-			IStatus status = new Status(IStatus.WARNING,
-					DebugUIPlugin.getUniqueIdentifier(),
-					"Duplicate: This exception already exists");
-			DebugUIPlugin.errorDialog(getShell(), DebugUIPlugin
-					.removeAccelerators("Add Custom User Exception"), "Error",
-					status);
-		}
-	}
+        ArrayList<Object> currentElementsList = new ArrayList<Object>();
+        for (int i = 0; i < currentElements.length; ++i) {
+            Object element = currentElements[i];
+            currentElementsList.add(element);
+        }
 
-	/**
-	 * Creates two checkboxes to enable/disable breaking on the exception. 
-	 * The default value for Suspend on caught exception is false 
-	 * The default value for suspend on uncaught exception is false 
-	 * 
-	 * @param composite
-	 */
-	private void createCaughtUncaughtCheck(Composite composite) {
-	    PyExceptionBreakPointManager instance = PyExceptionBreakPointManager.getInstance();
-	    String breakOnCaught = instance.getBreakOnCaughtExceptions();
-        String breakOnUncaught = instance.getBreakOnUncaughtExceptions();
+        if (customException.isEmpty()) {
+            return;
+        }
 
-		uncaughtExceptionCheck = new Button(composite, SWT.CHECK);
-		uncaughtExceptionCheck.setText("Suspend on uncaught exceptions");
-		if (breakOnUncaught.length() > 0) {
-			uncaughtExceptionCheck.setSelection(Boolean
-					.parseBoolean(breakOnUncaught));
-		} else {
-			uncaughtExceptionCheck.setSelection(false);
-		}
+        if (!currentElementsList.contains(customException)) {
+            getViewer().add(customException);
+            addNewExceptionField.setText("");
+            ((PyExceptionListProvider) contentProvider).addUserConfiguredException(customException);
+        } else {
+            IStatus status = new Status(IStatus.WARNING, DebugUIPlugin.getUniqueIdentifier(),
+                    "Duplicate: This exception already exists");
+            DebugUIPlugin.errorDialog(getShell(), DebugUIPlugin.removeAccelerators("Add Custom User Exception"),
+                    "Error", status);
+        }
+    }
 
-		caughtExceptionCheck = new Button(composite, SWT.CHECK);
-		caughtExceptionCheck.setText("Suspend on caught exceptions *");
-		if (breakOnCaught.length() > 0) {
-			caughtExceptionCheck.setSelection(Boolean
-					.parseBoolean(breakOnCaught));
-		} else {
-			caughtExceptionCheck.setSelection(false);
-		}
-		
-		Label label = new Label(composite, SWT.NONE);
-		label.setText("* Will make debugging ~ 2x slower");
-	}
+    /**
+     * Creates options related to dealing with exceptions. 
+     */
+    private void createDealingWithExceptionsOptions(Composite composite) {
+        PyExceptionBreakPointManager instance = PyExceptionBreakPointManager.getInstance();
+        uncaughtExceptionCheck = new Button(composite, SWT.CHECK);
+        uncaughtExceptionCheck.setText("Suspend on uncaught exceptions");
+        uncaughtExceptionCheck.setSelection(instance.getBreakOnUncaughtExceptions());
 
-	/**
-	 * Updates the current filter with the text field text.
-	 */
-	protected void doFilterUpdate(IProgressMonitor monitor) {
-		setFilter(filterPatternField.getText(), monitor, true);
-	}
+        caughtExceptionCheck = new Button(composite, SWT.CHECK);
+        caughtExceptionCheck.setText("Suspend on caught exceptions *");
+        caughtExceptionCheck.setSelection(instance.getBreakOnCaughtExceptions());
 
-	// filtering things...
-	protected void setFilter(String text, IProgressMonitor monitor,
-			boolean updateFilterMatcher) {
-		if (monitor.isCanceled())
-			return;
+        stopOnExceptionsHandledInSameContextCheck = new Button(composite, SWT.CHECK);
+        stopOnExceptionsHandledInSameContextCheck.setText("    Skip exceptions caught in same function");
+        stopOnExceptionsHandledInSameContextCheck.setSelection(instance.getSkipCaughtExceptionsInSameFunction());
 
-		if (updateFilterMatcher) {
-			// just so that subclasses may already treat it.
-			if (fFilterMatcher.lastPattern.equals(text)) {
-				// no actual change...
-				return;
-			}
-			fFilterMatcher.setFilter(text);
-			if (monitor.isCanceled())
-				return;
-		}
+        ignoreExceptionsThrownInLinesWithIgnoreExceptionCheck = new Button(composite, SWT.CHECK);
+        ignoreExceptionsThrownInLinesWithIgnoreExceptionCheck
+                .setText("    Ignore exceptions thrown in lines with # @IgnoreException");
+        ignoreExceptionsThrownInLinesWithIgnoreExceptionCheck.setSelection(instance
+                .getIgnoreExceptionsThrownInLinesWithIgnoreException());
 
-		getViewer().refresh();
-		setSelectedElementChecked();
-	}
+        caughtExceptionCheck.addSelectionListener(new SelectionListener() {
 
-	protected boolean matchExceptionToShowInList(Object element) {
-		return fFilterMatcher.match(element);
-	}
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                updateStates();
+            }
 
-	/**
-	 * The <code>ListSelectionDialog</code> implementation of this
-	 * <code>Dialog</code> method builds a list of the selected elements for
-	 * later retrieval by the client and closes this dialog.
-	 */
-	protected void okPressed() {
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e) {
 
-		// Get the input children.
-		Object[] children = contentProvider.getElements(inputElement);
-		// Build a list of selected children.
-		if (children != null) {
-			ArrayList<Object> list = new ArrayList<Object>();
-			for (int i = 0; i < children.length; ++i) {
-				Object element = children[i];
-				if (listViewer.getChecked(element)) {
-					list.add(element);
-				}
-			}
-			// If filter is on and checkedElements are not in filtered list
-			// then content provider.getElements doesn't fetch the same
-			if (selectedElements != null) {
-				for (Object selectedElement : selectedElements) {
-					if (!list.contains(selectedElement)) {
-						list.add(selectedElement);
-					}
-				}
-			}
-			setResult(list);
-		}
+            }
+        });
+        updateStates();
 
-		//Save whether to break debugger or not on caught / uncaught exceptions
-		handleCaughtExceptions = caughtExceptionCheck.getSelection();
+        Label label = new Label(composite, SWT.NONE);
+        label.setText("* Will make debugging ~ 2x slower");
+    }
+
+    private void updateStates() {
+        boolean enable = caughtExceptionCheck.getSelection();
+        stopOnExceptionsHandledInSameContextCheck.setEnabled(enable);
+        ignoreExceptionsThrownInLinesWithIgnoreExceptionCheck.setEnabled(enable);
+    }
+
+    /**
+     * Updates the current filter with the text field text.
+     */
+    protected void doFilterUpdate(IProgressMonitor monitor) {
+        setFilter(filterPatternField.getText(), monitor, true);
+    }
+
+    // filtering things...
+    protected void setFilter(String text, IProgressMonitor monitor, boolean updateFilterMatcher) {
+        if (monitor.isCanceled()) {
+            return;
+        }
+
+        if (updateFilterMatcher) {
+            // just so that subclasses may already treat it.
+            if (fFilterMatcher.lastPattern.equals(text)) {
+                // no actual change...
+                return;
+            }
+            fFilterMatcher.setFilter(text);
+            if (monitor.isCanceled()) {
+                return;
+            }
+        }
+
+        getViewer().refresh();
+        setSelectedElementChecked();
+    }
+
+    protected boolean matchExceptionToShowInList(Object element) {
+        return fFilterMatcher.match(element);
+    }
+
+    /**
+     * The <code>ListSelectionDialog</code> implementation of this
+     * <code>Dialog</code> method builds a list of the selected elements for
+     * later retrieval by the client and closes this dialog.
+     */
+    @Override
+    protected void okPressed() {
+
+        // Get the input children.
+        Object[] children = contentProvider.getElements(inputElement);
+        // Build a list of selected children.
+        if (children != null) {
+            ArrayList<Object> list = new ArrayList<Object>();
+            for (int i = 0; i < children.length; ++i) {
+                Object element = children[i];
+                if (listViewer.getChecked(element)) {
+                    list.add(element);
+                }
+            }
+            // If filter is on and checkedElements are not in filtered list
+            // then content provider.getElements doesn't fetch the same
+            if (selectedElements != null) {
+                for (Object selectedElement : selectedElements) {
+                    if (!list.contains(selectedElement)) {
+                        list.add(selectedElement);
+                    }
+                }
+            }
+            setResult(list);
+        }
+
+        //Save whether to break debugger or not on caught / uncaught exceptions
+        handleCaughtExceptions = caughtExceptionCheck.getSelection();
         handleUncaughtExceptions = uncaughtExceptionCheck.getSelection();
-		super.okPressed();
-	}
-	
+        stopOnExceptionsHandledInSameContext = stopOnExceptionsHandledInSameContextCheck.getSelection();
+        ignoreExceptionsThrownInLinesWithIgnoreException = ignoreExceptionsThrownInLinesWithIgnoreExceptionCheck
+                .getSelection();
+        super.okPressed();
+    }
 
     public boolean getResultHandleUncaughtExceptions() {
         return this.handleUncaughtExceptions;
@@ -399,152 +416,160 @@ public class PyConfigureExceptionDialog extends SelectionDialog {
         return this.handleCaughtExceptions;
     }
 
+    public boolean getResultStopOnExceptionsHandledInSameContext() {
+        return this.stopOnExceptionsHandledInSameContext;
+    }
 
-	/**
-	 * Returns the viewer used to show the list.
-	 * 
-	 * @return the viewer, or <code>null</code> if not yet created
-	 */
-	protected CheckboxTableViewer getViewer() {
-		return listViewer;
-	}
+    public boolean getResultIgnoreExceptionsThrownInLinesWithIgnoreException() {
+        return this.ignoreExceptionsThrownInLinesWithIgnoreException;
+    }
 
-	/**
-	 * Returns the viewer cast to the correct instance. Possibly
-	 * <code>null</code> if the viewer has not been created yet.
-	 * 
-	 * @return the viewer cast to CheckboxTableViewer
-	 */
-	protected CheckboxTableViewer getCheckBoxTableViewer() {
-		return (CheckboxTableViewer) getViewer();
-	}
+    /**
+     * Returns the viewer used to show the list.
+     * 
+     * @return the viewer, or <code>null</code> if not yet created
+     */
+    protected CheckboxTableViewer getViewer() {
+        return listViewer;
+    }
 
-	/**
-	 * Initialises this dialog's viewer after it has been laid out.
-	 */
-	private void initContent() {
-		listViewer.setInput(inputElement);
-		Listener listener = new Listener() {
-			public void handleEvent(Event e) {
-				if (updateInThread) {
-					if (filterJob != null) {
-						// cancel it if it was already in progress
-						filterJob.cancel();
-					}
-					filterJob = new FilterJob();
-					filterJob.start();
-				} else {
-					doFilterUpdate(new NullProgressMonitor());
-				}
-			}
-		};
+    /**
+     * Returns the viewer cast to the correct instance. Possibly
+     * <code>null</code> if the viewer has not been created yet.
+     * 
+     * @return the viewer cast to CheckboxTableViewer
+     */
+    protected CheckboxTableViewer getCheckBoxTableViewer() {
+        return getViewer();
+    }
 
-		filterPatternField.setText(filterPattern != null ? filterPattern : "");
-		filterPatternField.addListener(SWT.Modify, listener);
-	}
+    /**
+     * Initialises this dialog's viewer after it has been laid out.
+     */
+    private void initContent() {
+        listViewer.setInput(inputElement);
+        Listener listener = new Listener() {
+            public void handleEvent(Event e) {
+                if (updateInThread) {
+                    if (filterJob != null) {
+                        // cancel it if it was already in progress
+                        filterJob.cancel();
+                    }
+                    filterJob = new FilterJob();
+                    filterJob.start();
+                } else {
+                    doFilterUpdate(new NullProgressMonitor());
+                }
+            }
+        };
 
-	/**
-	 * Visually checks the previously-specified elements in this dialog's list
-	 * viewer.
-	 */
-	private void checkInitialSelections() {
-		Iterator itemsToCheck = getInitialElementSelections().iterator();
+        filterPatternField.setText(filterPattern != null ? filterPattern : "");
+        filterPatternField.addListener(SWT.Modify, listener);
+    }
 
-		while (itemsToCheck.hasNext()) {
-			listViewer.setChecked(itemsToCheck.next(), true);
-		}
-	}
+    /**
+     * Visually checks the previously-specified elements in this dialog's list
+     * viewer.
+     */
+    private void checkInitialSelections() {
+        Iterator itemsToCheck = getInitialElementSelections().iterator();
 
-	/**
-	 * setSelectedElementChecked
-	 * 
-	 * Visually checks the elements in the selectedElements list after the
-	 * refresh, which is triggered on applying / removing filter
-	 * 
-	 */
-	private void setSelectedElementChecked() {
-		if (selectedElements != null) {
-			for (Object element : selectedElements) {
-				getViewer().setChecked(element, true);
-			}
-		}
-	}
+        while (itemsToCheck.hasNext()) {
+            listViewer.setChecked(itemsToCheck.next(), true);
+        }
+    }
 
-	private List<Object> selectedElements;
+    /**
+     * setSelectedElementChecked
+     * 
+     * Visually checks the elements in the selectedElements list after the
+     * refresh, which is triggered on applying / removing filter
+     * 
+     */
+    private void setSelectedElementChecked() {
+        if (selectedElements != null) {
+            for (Object element : selectedElements) {
+                getViewer().setChecked(element, true);
+            }
+        }
+    }
 
-	private void addToSelectedElements(Object element) {
-		if (selectedElements == null)
-			selectedElements = new ArrayList<Object>();
-		if (!selectedElements.contains(element))
-			selectedElements.add(element);
-	}
+    private List<Object> selectedElements;
 
-	private void removeFromSelectedElements(Object element) {
-		if (selectedElements != null && selectedElements.contains(element))
-			selectedElements.remove(element);
-	}
+    private void addToSelectedElements(Object element) {
+        if (selectedElements == null) {
+            selectedElements = new ArrayList<Object>();
+        }
+        if (!selectedElements.contains(element)) {
+            selectedElements.add(element);
+        }
+    }
 
-	class FilterJob extends Thread {
-		// only thing it implements is the cancelled
-		IProgressMonitor monitor = new NullProgressMonitor();
+    private void removeFromSelectedElements(Object element) {
+        if (selectedElements != null && selectedElements.contains(element)) {
+            selectedElements.remove(element);
+        }
+    }
 
-		public FilterJob() {
-			setPriority(Thread.MIN_PRIORITY);
-			setName("PyConfigureExceptionDialog: FilterJob");
-		}
+    class FilterJob extends Thread {
+        // only thing it implements is the cancelled
+        IProgressMonitor monitor = new NullProgressMonitor();
 
-		@Override
-		public void run() {
-			try {
-				sleep(300);
-			} catch (InterruptedException e) {
-				// ignore
-			}
-			if (!monitor.isCanceled()) {
-				Display display = Display.getDefault();
-				display.asyncExec(new Runnable() {
+        public FilterJob() {
+            setPriority(Thread.MIN_PRIORITY);
+            setName("PyConfigureExceptionDialog: FilterJob");
+        }
 
-					public void run() {
-						if (!monitor.isCanceled() && filterPatternField != null && !filterPatternField.isDisposed()) {
-							doFilterUpdate(monitor);
-						}
-					}
+        @Override
+        public void run() {
+            try {
+                sleep(300);
+            } catch (InterruptedException e) {
+                // ignore
+            }
+            if (!monitor.isCanceled()) {
+                Display display = Display.getDefault();
+                display.asyncExec(new Runnable() {
 
-				});
-			}
-		}
+                    public void run() {
+                        if (!monitor.isCanceled() && filterPatternField != null && !filterPatternField.isDisposed()) {
+                            doFilterUpdate(monitor);
+                        }
+                    }
 
-		public void cancel() {
-			this.monitor.setCanceled(true);
-		}
-	}
+                });
+            }
+        }
 
-	protected class DefaultFilterMatcher {
-		public StringMatcher fMatcher;
-		public String lastPattern;
+        public void cancel() {
+            this.monitor.setCanceled(true);
+        }
+    }
 
-		public DefaultFilterMatcher() {
-			setFilter("");
+    protected class DefaultFilterMatcher {
+        public StringMatcher fMatcher;
+        public String lastPattern;
 
-		}
+        public DefaultFilterMatcher() {
+            setFilter("");
 
-		public void setFilter(String pattern) {
-			setFilter(pattern, true, false);
-		}
+        }
 
-		private void setFilter(String pattern, boolean ignoreCase,
-				boolean ignoreWildCards) {
-			fMatcher = new StringMatcher(pattern + '*', ignoreCase,
-					ignoreWildCards);
-			this.lastPattern = pattern;
-		}
+        public void setFilter(String pattern) {
+            setFilter(pattern, true, false);
+        }
 
-		public boolean match(Object element) {
-			boolean match = fMatcher.match(labelProvider.getText(element));
-			if (match) {
-				return true;
-			}
-			return false;
-		}
-	}
+        private void setFilter(String pattern, boolean ignoreCase, boolean ignoreWildCards) {
+            fMatcher = new StringMatcher(pattern + '*', ignoreCase, ignoreWildCards);
+            this.lastPattern = pattern;
+        }
+
+        public boolean match(Object element) {
+            boolean match = fMatcher.match(labelProvider.getText(element));
+            if (match) {
+                return true;
+            }
+            return false;
+        }
+    }
 }

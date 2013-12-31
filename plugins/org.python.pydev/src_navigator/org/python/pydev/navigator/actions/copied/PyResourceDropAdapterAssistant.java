@@ -1,13 +1,16 @@
 /**
- * Copyright (c) 2005-2011 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2005-2013 by Appcelerator, Inc. All Rights Reserved.
  * Licensed under the terms of the Eclipse Public License (EPL).
  * Please see the license.txt included with this distribution for details.
  * Any modifications to this file must keep this entire header intact.
  */
 package org.python.pydev.navigator.actions.copied;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
@@ -15,6 +18,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.util.LocalSelectionTransfer;
@@ -35,7 +39,15 @@ import org.eclipse.ui.internal.navigator.resources.plugin.WorkbenchNavigatorPlug
 import org.eclipse.ui.navigator.CommonDropAdapter;
 import org.eclipse.ui.navigator.resources.ResourceDropAdapterAssistant;
 import org.eclipse.ui.part.ResourceTransfer;
+import org.python.pydev.core.MisconfigurationException;
+import org.python.pydev.core.log.Log;
+import org.python.pydev.editor.codecompletion.revisited.PythonPathHelper;
+import org.python.pydev.editor.refactoring.AbstractPyRefactoring;
+import org.python.pydev.editor.refactoring.ModuleRenameRefactoringRequest;
+import org.python.pydev.editor.refactoring.MultiModuleMoveRefactoringRequest;
 import org.python.pydev.navigator.elements.IWrappedResource;
+import org.python.pydev.plugin.PydevPlugin;
+import org.python.pydev.plugin.nature.PythonNature;
 
 /**
  * Copied becaus the original did not really adapt to resources (it tries to do if !xxx instanceof IResource in many places)
@@ -65,6 +77,7 @@ public class PyResourceDropAdapterAssistant extends ResourceDropAdapterAssistant
      * 
      * @see org.eclipse.ui.navigator.CommonDropAdapterAssistant#isSupportedType(org.eclipse.swt.dnd.TransferData)
      */
+    @Override
     public boolean isSupportedType(TransferData aTransferType) {
         return super.isSupportedType(aTransferType) || FileTransfer.getInstance().isSupportedType(aTransferType);
     }
@@ -75,19 +88,22 @@ public class PyResourceDropAdapterAssistant extends ResourceDropAdapterAssistant
      * @see org.eclipse.ui.navigator.CommonDropAdapterAssistant#validateDrop(java.lang.Object,
      *      int, org.eclipse.swt.dnd.TransferData)
      */
+    @Override
     public IStatus validateDrop(Object target, int aDropOperation, TransferData transferType) {
         target = getActual(target);
         if (!(target instanceof IResource)) {
-            return WorkbenchNavigatorPlugin
-                    .createStatus(IStatus.INFO, 0, WorkbenchNavigatorMessages.DropAdapter_targetMustBeResource, null);
+            return WorkbenchNavigatorPlugin.createStatus(IStatus.INFO, 0,
+                    WorkbenchNavigatorMessages.DropAdapter_targetMustBeResource, null);
         }
         IResource resource = (IResource) target;
         if (!resource.isAccessible()) {
-            return WorkbenchNavigatorPlugin.createErrorStatus(0, WorkbenchNavigatorMessages.DropAdapter_canNotDropIntoClosedProject, null);
+            return WorkbenchNavigatorPlugin.createErrorStatus(0,
+                    WorkbenchNavigatorMessages.DropAdapter_canNotDropIntoClosedProject, null);
         }
         IContainer destination = getActualTarget(resource);
         if (destination.getType() == IResource.ROOT) {
-            return WorkbenchNavigatorPlugin.createErrorStatus(0, WorkbenchNavigatorMessages.DropAdapter_resourcesCanNotBeSiblings, null);
+            return WorkbenchNavigatorPlugin.createErrorStatus(0,
+                    WorkbenchNavigatorMessages.DropAdapter_resourcesCanNotBeSiblings, null);
         }
         String message = null;
         // drag within Eclipse?
@@ -136,8 +152,9 @@ public class PyResourceDropAdapterAssistant extends ResourceDropAdapterAssistant
      * @see org.eclipse.ui.navigator.CommonDropAdapterAssistant#handleDrop(CommonDropAdapter,
      *      DropTargetEvent, Object)
      */
+    @Override
     public IStatus handleDrop(CommonDropAdapter aDropAdapter, DropTargetEvent aDropTargetEvent, Object aTarget) {
-//        aTarget = getActual(aTarget);
+        //        aTarget = getActual(aTarget);
         if (DEBUG) {
             System.out.println("ResourceDropAdapterAssistant.handleDrop (begin)"); //$NON-NLS-1$
         }
@@ -188,19 +205,22 @@ public class PyResourceDropAdapterAssistant extends ResourceDropAdapterAssistant
      * @see org.eclipse.ui.navigator.CommonDropAdapterAssistant#validatePluginTransferDrop(org.eclipse.jface.viewers.IStructuredSelection,
      *      java.lang.Object)
      */
+    @Override
     public IStatus validatePluginTransferDrop(IStructuredSelection aDragSelection, Object aDropTarget) {
         aDropTarget = getActual(aDropTarget);
         if (!(aDropTarget instanceof IResource)) {
-            return WorkbenchNavigatorPlugin
-                    .createStatus(IStatus.INFO, 0, WorkbenchNavigatorMessages.DropAdapter_targetMustBeResource, null);
+            return WorkbenchNavigatorPlugin.createStatus(IStatus.INFO, 0,
+                    WorkbenchNavigatorMessages.DropAdapter_targetMustBeResource, null);
         }
         IResource resource = (IResource) aDropTarget;
         if (!resource.isAccessible()) {
-            return WorkbenchNavigatorPlugin.createErrorStatus(0, WorkbenchNavigatorMessages.DropAdapter_canNotDropIntoClosedProject, null);
+            return WorkbenchNavigatorPlugin.createErrorStatus(0,
+                    WorkbenchNavigatorMessages.DropAdapter_canNotDropIntoClosedProject, null);
         }
         IContainer destination = getActualTarget(resource);
         if (destination.getType() == IResource.ROOT) {
-            return WorkbenchNavigatorPlugin.createErrorStatus(0, WorkbenchNavigatorMessages.DropAdapter_resourcesCanNotBeSiblings, null);
+            return WorkbenchNavigatorPlugin.createErrorStatus(0,
+                    WorkbenchNavigatorMessages.DropAdapter_resourcesCanNotBeSiblings, null);
         }
 
         IResource[] selectedResources = getSelectedResources(aDragSelection);
@@ -226,6 +246,7 @@ public class PyResourceDropAdapterAssistant extends ResourceDropAdapterAssistant
      * @see org.eclipse.ui.navigator.CommonDropAdapterAssistant#handlePluginTransferDrop(org.eclipse.jface.viewers.IStructuredSelection,
      *      java.lang.Object)
      */
+    @Override
     public IStatus handlePluginTransferDrop(IStructuredSelection aDragSelection, Object aDropTarget) {
         aDropTarget = getActual(aDropTarget);
 
@@ -302,13 +323,19 @@ public class PyResourceDropAdapterAssistant extends ResourceDropAdapterAssistant
      * Performs a resource copy
      */
     private IStatus performResourceCopy(CommonDropAdapter dropAdapter, Shell shell, IResource[] sources) {
-        MultiStatus problems = new MultiStatus(PlatformUI.PLUGIN_ID, 1, WorkbenchNavigatorMessages.DropAdapter_problemsMoving, null);
-        mergeStatus(problems, validateTarget(getCurrentTarget(dropAdapter), dropAdapter.getCurrentTransfer(), dropAdapter
-                .getCurrentOperation()));
+        MultiStatus problems = new MultiStatus(PlatformUI.PLUGIN_ID, 1,
+                WorkbenchNavigatorMessages.DropAdapter_problemsMoving, null);
+        mergeStatus(
+                problems,
+                validateTarget(getCurrentTarget(dropAdapter), dropAdapter.getCurrentTransfer(),
+                        dropAdapter.getCurrentOperation()));
 
         IContainer target = getActualTarget((IResource) getCurrentTarget(dropAdapter));
         CopyFilesAndFoldersOperation operation = new CopyFilesAndFoldersOperation(shell);
-        operation.copyResources(sources, target);
+        IResource[] copiedResources = operation.copyResources(sources, target);
+        if (copiedResources.length > 0) {
+            PythonPathHelper.updatePyPath(copiedResources, target, PythonPathHelper.OPERATION_COPY);
+        }
 
         return problems;
     }
@@ -317,16 +344,98 @@ public class PyResourceDropAdapterAssistant extends ResourceDropAdapterAssistant
      * Performs a resource move
      */
     private IStatus performResourceMove(CommonDropAdapter dropAdapter, IResource[] sources) {
-        MultiStatus problems = new MultiStatus(PlatformUI.PLUGIN_ID, 1, WorkbenchNavigatorMessages.DropAdapter_problemsMoving, null);
-        mergeStatus(problems, validateTarget(getCurrentTarget(dropAdapter), dropAdapter.getCurrentTransfer(), dropAdapter
-                .getCurrentOperation()));
+        MultiStatus problems = new MultiStatus(PlatformUI.PLUGIN_ID, 1,
+                WorkbenchNavigatorMessages.DropAdapter_problemsMoving, null);
+        mergeStatus(
+                problems,
+                validateTarget(getCurrentTarget(dropAdapter), dropAdapter.getCurrentTransfer(),
+                        dropAdapter.getCurrentOperation()));
 
         IContainer target = getActualTarget((IResource) getCurrentTarget(dropAdapter));
-        ReadOnlyStateChecker checker = new ReadOnlyStateChecker(getShell(), WorkbenchNavigatorMessages.MoveResourceAction_title,
+        ReadOnlyStateChecker checker = new ReadOnlyStateChecker(getShell(),
+                WorkbenchNavigatorMessages.MoveResourceAction_title,
                 WorkbenchNavigatorMessages.MoveResourceAction_checkMoveMessage);
         sources = checker.checkReadOnlyResources(sources);
+
+        boolean targetInSourceFolder = false;
+        PythonNature nature;
+        try {
+            nature = PythonNature.getPythonNature(target);
+            Set<String> projectSourcePathSet = nature.getPythonPathNature().getProjectSourcePathSet(true);
+            for (String string : projectSourcePathSet) {
+                if (new Path(string).isPrefixOf(target.getFullPath())) {
+                    targetInSourceFolder = true;
+                    break;
+                }
+            }
+        } catch (CoreException e1) {
+            Log.log(e1);
+        }
+
+        if (targetInSourceFolder) {
+            try {
+                int resolved = 0;
+                List<ModuleRenameRefactoringRequest> requests = new ArrayList<>();
+                for (IResource s : sources) {
+                    nature = PythonNature.getPythonNature(s);
+                    try {
+                        String resolveModule = nature.resolveModule(s);
+                        if (resolveModule != null) {
+                            File file = s.getLocation().toFile();
+                            boolean isDir = file.isDirectory();
+                            File initFile = null;
+                            if (isDir) {
+                                initFile = PythonPathHelper.getFolderInit(file);
+                            }
+                            if (isDir && initFile == null) {
+                                //It's a directory without an __init__.py inside the pythonpath: can't move along with the others...
+                                break;
+                            } else {
+                                if (isDir) {
+                                    //If it's a directory, use the __init__.py instead.
+                                    file = initFile;
+                                }
+                            }
+
+                            resolved += 1;
+                            requests.add(new ModuleRenameRefactoringRequest(file, nature, target));
+                        }
+                    } catch (MisconfigurationException e) {
+                        Log.log(e);
+                    }
+                }
+                if (resolved != 0) {
+                    if (resolved != sources.length) {
+                        problems.add(PydevPlugin
+                                .makeStatus(
+                                        IStatus.ERROR,
+                                        "Unable to do refactor action because some of the resources moved are in the PYTHONPATH and some are not.",
+                                        null));
+                        return problems;
+                    } else {
+                        //Make a refactoring operation
+                        AbstractPyRefactoring.getPyRefactoring().rename(
+                                new MultiModuleMoveRefactoringRequest(requests, target));
+
+                        return problems;
+                    }
+                }
+            } catch (Exception e) {
+                Log.log(e);
+                problems.add(PydevPlugin
+                        .makeStatus(
+                                IStatus.ERROR,
+                                e.getMessage(),
+                                e));
+                return problems;
+            }
+        }
+
         MoveFilesAndFoldersOperation operation = new MoveFilesAndFoldersOperation(getShell());
-        operation.copyResources(sources, target);
+        IResource[] copiedResources = operation.copyResources(sources, target);
+        if (copiedResources.length > 0) {
+            PythonPathHelper.updatePyPath(copiedResources, target, PythonPathHelper.OPERATION_MOVE);
+        }
 
         return problems;
     }
@@ -340,8 +449,12 @@ public class PyResourceDropAdapterAssistant extends ResourceDropAdapterAssistant
      */
     private IStatus performFileDrop(CommonDropAdapter anAdapter, Object data) {
         data = getActual(data);
-        MultiStatus problems = new MultiStatus(PlatformUI.PLUGIN_ID, 0, WorkbenchNavigatorMessages.DropAdapter_problemImporting, null);
-        mergeStatus(problems, validateTarget(getCurrentTarget(anAdapter), anAdapter.getCurrentTransfer(), anAdapter.getCurrentOperation()));
+        MultiStatus problems = new MultiStatus(PlatformUI.PLUGIN_ID, 0,
+                WorkbenchNavigatorMessages.DropAdapter_problemImporting, null);
+        mergeStatus(
+                problems,
+                validateTarget(getCurrentTarget(anAdapter), anAdapter.getCurrentTransfer(),
+                        anAdapter.getCurrentOperation()));
 
         final IContainer target = getActualTarget((IResource) getCurrentTarget(anAdapter));
         final String[] names = (String[]) data;
@@ -364,15 +477,18 @@ public class PyResourceDropAdapterAssistant extends ResourceDropAdapterAssistant
     private IStatus validateTarget(Object target, TransferData transferType, int dropOperation) {
         target = getActual(target);
         if (!(target instanceof IResource)) {
-            return WorkbenchNavigatorPlugin.createInfoStatus(WorkbenchNavigatorMessages.DropAdapter_targetMustBeResource);
+            return WorkbenchNavigatorPlugin
+                    .createInfoStatus(WorkbenchNavigatorMessages.DropAdapter_targetMustBeResource);
         }
         IResource resource = (IResource) target;
         if (!resource.isAccessible()) {
-            return WorkbenchNavigatorPlugin.createErrorStatus(WorkbenchNavigatorMessages.DropAdapter_canNotDropIntoClosedProject);
+            return WorkbenchNavigatorPlugin
+                    .createErrorStatus(WorkbenchNavigatorMessages.DropAdapter_canNotDropIntoClosedProject);
         }
         IContainer destination = getActualTarget(resource);
         if (destination.getType() == IResource.ROOT) {
-            return WorkbenchNavigatorPlugin.createErrorStatus(WorkbenchNavigatorMessages.DropAdapter_resourcesCanNotBeSiblings);
+            return WorkbenchNavigatorPlugin
+                    .createErrorStatus(WorkbenchNavigatorMessages.DropAdapter_resourcesCanNotBeSiblings);
         }
         String message = null;
         // drag within Eclipse?

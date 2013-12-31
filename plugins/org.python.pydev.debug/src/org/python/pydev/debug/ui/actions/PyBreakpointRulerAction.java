@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2005-2011 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2005-2013 by Appcelerator, Inc. All Rights Reserved.
  * Licensed under the terms of the Eclipse Public License (EPL).
  * Please see the license.txt included with this distribution for details.
  * Any modifications to this file must keep this entire header intact.
@@ -32,12 +32,13 @@ import org.eclipse.jface.text.source.IVerticalRulerInfo;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.texteditor.IUpdate;
-import org.python.pydev.core.REF;
 import org.python.pydev.core.log.Log;
 import org.python.pydev.debug.core.PydevDebugPlugin;
 import org.python.pydev.debug.model.PyBreakpoint;
 import org.python.pydev.debug.model.PyDebugModelPresentation;
 import org.python.pydev.editorinput.PydevFileEditorInput;
+import org.python.pydev.shared_core.io.FileUtils;
+import org.python.pydev.shared_ui.utils.PyMarkerUtils;
 
 /**
  * Setting/removing breakpoints in the ruler
@@ -65,7 +66,6 @@ public class PyBreakpointRulerAction extends AbstractBreakpointRulerAction {
         fRemoveLabel = "Remove Breakpoint";
     }
 
-
     /**
      * @see IUpdate#update()
      */
@@ -73,7 +73,7 @@ public class PyBreakpointRulerAction extends AbstractBreakpointRulerAction {
         fMarkers = getMarkersFromCurrentFile(true);
         setText(fMarkers.isEmpty() ? fAddLabel : fRemoveLabel);
     }
-    
+
     /**
      * @see Action#run()
      */
@@ -85,39 +85,37 @@ public class PyBreakpointRulerAction extends AbstractBreakpointRulerAction {
         }
     }
 
-    
     /**
      * This is the function that actually adds the marker to the Eclipse
      * structure.
      */
     protected void addMarker() {
-    	IDocument document = getDocument();
-    	int rulerLine = getInfo().getLineOfLastMouseButtonActivity();
-        addBreakpointMarker(document, rulerLine+1, fTextEditor);
+        IDocument document = getDocument();
+        int rulerLine = getInfo().getLineOfLastMouseButtonActivity();
+        addBreakpointMarker(document, rulerLine + 1, fTextEditor);
     }
 
-
-	public static void addBreakpointMarker(IDocument document, int lineNumber, ITextEditor textEditor) {
-		try {
+    public static void addBreakpointMarker(IDocument document, int lineNumber, ITextEditor textEditor) {
+        try {
             if (lineNumber < 0)
                 return;
 
             // just to validate it
             try {
-				document.getLineInformation(lineNumber - 1);
-			} catch (Exception e) {
-				return; //ignore
-			}
-            final IResource resource = getResourceForDebugMarkers(textEditor);
+                document.getLineInformation(lineNumber - 1);
+            } catch (Exception e) {
+                return; //ignore
+            }
+            final IResource resource = PyMarkerUtils.getResourceForTextEditor(textEditor);
 
             // The map containing the marker attributes
             final Map<String, Object> map = new HashMap<String, Object>();
 
             // if not null, we're dealing with an external file.
             final IEditorInput externalFileEditorInput = getExternalFileEditorInput(textEditor);
-            
+
             //TODO: that happens when we're trying to set a breakpoint in a file that's within a zip file.
-            if(externalFileEditorInput == null && resource instanceof IWorkspaceRoot){
+            if (externalFileEditorInput == null && resource instanceof IWorkspaceRoot) {
                 return;
             }
 
@@ -126,10 +124,10 @@ public class PyBreakpointRulerAction extends AbstractBreakpointRulerAction {
             map.put(IBreakpoint.ENABLED, new Boolean(true));
             map.put(IBreakpoint.ID, PyDebugModelPresentation.PY_DEBUG_MODEL_ID);
             if (externalFileEditorInput != null) {
-            	File file = PydevFileEditorInput.getFile(externalFileEditorInput);
-            	if(file != null){
-            		map.put(PyBreakpoint.PY_BREAK_EXTERNAL_PATH_ID, REF.getFileAbsolutePath(file));
-            	}
+                File file = PydevFileEditorInput.getFile(externalFileEditorInput);
+                if (file != null) {
+                    map.put(PyBreakpoint.PY_BREAK_EXTERNAL_PATH_ID, FileUtils.getFileAbsolutePath(file));
+                }
             }
 
             IWorkspaceRunnable runnable = new IWorkspaceRunnable() {
@@ -145,9 +143,9 @@ public class PyBreakpointRulerAction extends AbstractBreakpointRulerAction {
 
             resource.getWorkspace().run(runnable, null);
         } catch (Exception e) {
-        	Log.log(e);
+            Log.log(e);
         }
-	}
+    }
 
     /**
      * @param markers the markers that will be removed in this function (they may be in any editor, not only in the current one)

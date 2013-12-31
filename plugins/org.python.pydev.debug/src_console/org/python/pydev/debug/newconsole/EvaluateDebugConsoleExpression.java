@@ -1,14 +1,26 @@
+/******************************************************************************
+* Copyright (C) 2012-2013  Hussain Bohra and others
+*
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+*     Hussain Bohra <hussain.bohra@tavant.com> - initial API and implementation
+*     Fabio Zadrozny <fabiofz@gmail.com>       - ongoing maintenance
+******************************************************************************/
 package org.python.pydev.debug.newconsole;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
-import org.python.pydev.core.docutils.StringUtils;
 import org.python.pydev.core.log.Log;
 import org.python.pydev.debug.model.AbstractDebugTarget;
 import org.python.pydev.debug.model.PyStackFrame;
 import org.python.pydev.debug.model.remote.AbstractDebuggerCommand;
 import org.python.pydev.debug.model.remote.EvaluateConsoleExpressionCommand;
 import org.python.pydev.debug.model.remote.ICommandResponseListener;
+import org.python.pydev.shared_core.string.StringUtils;
 
 /**
  * Class to exectute console command in the debugging context
@@ -18,7 +30,7 @@ import org.python.pydev.debug.model.remote.ICommandResponseListener;
  */
 public class EvaluateDebugConsoleExpression implements ICommandResponseListener {
 
-    String EMPTY = (String) StringUtils.EMPTY;
+    String EMPTY = StringUtils.EMPTY;
     private String payload;
     private final PyStackFrame frame;
 
@@ -39,7 +51,6 @@ public class EvaluateDebugConsoleExpression implements ICommandResponseListener 
         }
     }
 
-
     /**
      * Execute the line in selected frame context
      * 
@@ -49,13 +60,14 @@ public class EvaluateDebugConsoleExpression implements ICommandResponseListener 
     public void executeCommand(String command) {
         AbstractDebugTarget target = frame.getTarget();
         String locator = getLocator(frame.getThreadId(), frame.getId(), "EVALUATE", command);
-        AbstractDebuggerCommand cmd = new EvaluateConsoleExpressionCommand(target, locator, new ICommandResponseListener() {
+        AbstractDebuggerCommand cmd = new EvaluateConsoleExpressionCommand(target, locator,
+                new ICommandResponseListener() {
 
-            public void commandComplete(AbstractDebuggerCommand cmd) {
-                frame.forceGetNewVariables();
-                EvaluateDebugConsoleExpression.this.commandComplete(cmd);
-            }
-        });
+                    public void commandComplete(AbstractDebuggerCommand cmd) {
+                        frame.forceGetNewVariables();
+                        EvaluateDebugConsoleExpression.this.commandComplete(cmd);
+                    }
+                });
         target.postCommand(cmd);
     }
 
@@ -73,7 +85,6 @@ public class EvaluateDebugConsoleExpression implements ICommandResponseListener 
         target.postCommand(cmd);
         return waitForCommand();
     }
-
 
     /**
      * Keeps in a loop for 3 seconds or until the completions are found. If no

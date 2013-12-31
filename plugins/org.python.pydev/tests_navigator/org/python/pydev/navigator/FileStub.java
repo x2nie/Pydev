@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2005-2011 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2005-2012 by Appcelerator, Inc. All Rights Reserved.
  * Licensed under the terms of the Eclipse Public License (EPL).
  * Please see the license.txt included with this distribution for details.
  * Any modifications to this file must keep this entire header intact.
@@ -14,22 +14,23 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Assert;
 import org.python.pydev.core.resource_stubs.AbstractIFileStub;
 
-public class FileStub extends AbstractIFileStub implements IFile{
+public class FileStub extends AbstractIFileStub implements IFile {
 
     private ProjectStub project;
-    private File file;
+    protected File file;
 
     public FileStub(ProjectStub project, File file) {
         Assert.isTrue(file.exists() && file.isFile());
         this.project = project;
         this.file = file;
     }
-    
+
     @Override
     public String getName() {
         return this.file.getName();
     }
-    
+
+    @Override
     public IContainer getParent() {
         return project.getFolder(this.file.getParentFile());
     }
@@ -44,31 +45,35 @@ public class FileStub extends AbstractIFileStub implements IFile{
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         final FileStub other = (FileStub) obj;
         if (file == null) {
-            if (other.file != null)
+            if (other.file != null) {
                 return false;
-        } else if (!file.equals(other.file))
+            }
+        } else if (!file.equals(other.file)) {
             return false;
+        }
         return true;
     }
 
     @Override
     public String toString() {
-        return "FileStub:"+this.file;
+        return "FileStub:" + this.file;
     }
 
-
-
+    @Override
     public IProject getProject() {
         return this.project;
-        
+
     }
 
 }
