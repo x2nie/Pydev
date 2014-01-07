@@ -85,13 +85,15 @@ IMHO, it's not limited to the line text color, nor Jeeyul plugin only...
 It would occured in all plugin that look for "StyleText" class name like for hooking the Theme/CSS.
 
 
-Solution : 
+##Solution : 
 1. I hope the Pydev team change back the "StyledTextWithoutVerticalBar" class name into "StyledText". This will solve this issue.
 2. We need to hack another eclipse's plugins to recognize the "StyledTextWithoutVerticalBar" class as "StyledText". This is stupid solution due the problem is inside pydev, not other plugin. Atlease, this solution solve the pydev bug.
 3. If you are has no time to reinvent the wheel, then you might need to just use my stupid solution which is a fork of Jeeeyul's work, that allow PyDev to be styled as other editor. Found here: https://github.com/x2nie/eclipse-themes
 4. Perhaps, someone need me to solve the problem by editing the Pydev? Yeah, I want to; but this solution (number 1) <b>is too easy</b> to be done by everyone knows Pydev. Isn't it?.
 
+Oke, below is what should Pydev has. 
 ![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/pyeditor_css_bug.png)
+This is done by applying the solution number 2 above.
 
 cheers !!!
 :-)
