@@ -10,28 +10,27 @@ No special code added, but I've modify the resources (.PNG, .GIF)
 * Python File icon, to be used in dark theme or dark background
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/python_file_icon_bug.png)
+		<img src="https://raw.github.com/x2nie/Pydev/development/extra/python_file_icon_bug.png" />
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/python_file_icon_bugfixed.png)
+		<img src="https://raw.github.com/x2nie/Pydev/development/extra/python_file_icon_bugfixed.png" />
       </td>
     </tr>
 
     <tr style="border:none;">
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-* Python File icon, to be used in dark theme or dark background
+* Python Logotext, in New Project wizard
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/python_file_icon_bug.png)
+
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/python_file_icon_bugfixed.png)
-      </td>
+		<img src="https://raw.github.com/x2nie/Pydev/development/extra/pydev_newprojectwizard1.png" />      </td>
     </tr>
   </tbody>
 </table>
 
-* bugfix Python File icon, to be used in dark theme
-![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/python_file_icon_bug.png)
-![screenshot: right](https://raw.github.com/x2nie/Pydev/development/extra/python_file_icon_bugfixed.png)
+cheers !!!
+:-)
+x2nie
 
