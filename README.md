@@ -7,8 +7,11 @@ No special code added, but I've modify the resources (.PNG, .GIF)
   <tbody>
     <tr style="border:none;">
       <td style="vertical-align: top; padding-top: 10px; border: none;">
+
 * Python File icon, 
+
 to be used in dark theme 
+
 or dark background
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
@@ -21,7 +24,9 @@ or dark background
 
     <tr style="border:none;">
       <td style="vertical-align: top; padding-top: 10px; border: none;">
+
 * Python Logotext, 
+
 in New Project wizard
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
@@ -33,9 +38,13 @@ in New Project wizard
 
     <tr style="border:none;">
       <td style="vertical-align: top; padding-top: 10px; border: none;">
+
 * Python Logo separated 
+
 (different picture), 
+
 in header of 
+
 New Project wizard
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
@@ -92,7 +101,9 @@ It would occured in all plugin that look for "StyleText" class name like for hoo
 4. Perhaps, someone need me to solve the problem by editing the Pydev? Yeah, I want to; but this solution (number 1) <b>is too easy</b> to be done by everyone knows Pydev. Isn't it?.
 
 Oke, below is what should Pydev has. 
+
 ![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/pyeditor_css_bug.png)
+
 This is done by applying the solution number 2 above.
 
 cheers !!!
