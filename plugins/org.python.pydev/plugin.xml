@@ -1125,7 +1125,7 @@
             canFinishEarly="false"
             category="org.python.pydev.PythonCategory"
             class="org.python.pydev.ui.wizards.project.PythonProjectWizard"
-            descriptionImage="icons/python_logo.png"
+            descriptionImage="icons/python_logo_text.png"
             finalPerspective="org.python.pydev.ui.PythonPerspective"
             hasPages="true"
             icon="icons/python_16x16.png"
