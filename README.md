@@ -7,7 +7,9 @@ No special code added, but I've modify the resources (.PNG, .GIF)
   <tbody>
     <tr style="border:none;">
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-* Python File icon, to be used in dark theme or dark background
+* Python File icon, 
+to be used in dark theme 
+or dark background
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
 		<img src="https://raw.github.com/x2nie/Pydev/development/extra/python_file_icon_bug.png" />
@@ -19,7 +21,8 @@ No special code added, but I've modify the resources (.PNG, .GIF)
 
     <tr style="border:none;">
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-* Python Logotext, in New Project wizard
+* Python Logotext, 
+in New Project wizard
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
 
@@ -30,7 +33,10 @@ No special code added, but I've modify the resources (.PNG, .GIF)
 
     <tr style="border:none;">
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-* Python Logo separated (different picture), in header of New Project wizard
+* Python Logo separated 
+(different picture), 
+in header of 
+New Project wizard
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
 
@@ -41,7 +47,9 @@ No special code added, but I've modify the resources (.PNG, .GIF)
 
     <tr style="border:none;">
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-* Python interpreter logo in PyDev Explorer and in perspective
+* Python interpreter logo 
+in PyDev Explorer 
+and in perspective
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
 
@@ -63,14 +71,25 @@ No special code added, but I've modify the resources (.PNG, .GIF)
   </tbody>
 </table>
 
-## Minor bug Eclipse 4 CSS / Theme
-<b>still bug?</b>
-When deal with CSS of Eclipse 4 (Kepler), PyDev 3.2.x lost of "StyledText" styles such as dashed line (see screenshoot).
-The bug is because the class StyledText has been changed into StyledTextWithoutVerticalBar.
+## Minor bug of Pydev -&gt;&gt; Eclipse 4 CSS / Theme
+Pydev has potential problem when deal with CSS of Eclipse 4.x (I use Kepler / Eclipse 4.3),
+since the class "StyledText" has been changed into "StyledTextWithoutVerticalBar".
 
-So, if you are using enhanced Eclipse 4 CSS such as Eclipse-Theme / Chrome  https://github.com/jeeeyul/eclipse-themes,
-I recomended to add "StyledTextWithoutVerticalBar" to allow styles applied in PyDev editor /PyEdit...
-Simply, I have forked the Jeeeyul's project to also allow PyDev here: https://github.com/x2nie/eclipse-themes
+For example: 
+* If you are using CSS/Style enabled plugin like the famous [Jeeeyul's Eclipse 4 Chrome Theme](https://github.com/jeeeyul/eclipse-themes), and set the line text color and line style into "dashed",
+You would'nt see dashed line in Pydev Editor, while in all other Eclipse's editor (such Java Editor) those styles are applied.
+![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/pyeditor_css_bug3.png)
+![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/pyeditor_css_bug2.png)
+
+IMHO, it's not limited to the line text color, nor Jeeyul plugin only...
+It would occured in all plugin that look for "StyleText" class name like for hooking the Theme/CSS.
+
+
+Solution : 
+a. I hope the Pydev team change back the "StyledTextWithoutVerticalBar" class name into "StyledText". This will solve this issue.
+b. We need to hack another eclipse's plugins to recognize the "StyledTextWithoutVerticalBar" class as "StyledText". This is stupid solution due the problem is inside pydev, not other plugin. Atlease, this solution solve the pydev bug.
+c. If you are has no time to reinvent the wheel, then you might need to just use my stupid solution which is a fork of Jeeeyul's work, that allow PyDev to be styled as other editor. Found here: https://github.com/x2nie/eclipse-themes
+d. Perhaps, someone need me to solve the problem by editing the Pydev? Yeah, I want to; but this solution (number 1) <b>is too easy</b> to be done by everyone knows Pydev. Isn't it?.
 
 ![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/pyeditor_css_bug.png)
 
