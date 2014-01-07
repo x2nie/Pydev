@@ -78,7 +78,7 @@ since the class "StyledText" has been changed into "StyledTextWithoutVerticalBar
 For example: 
 * If you are using CSS/Style enabled plugin like the famous [Jeeeyul's Eclipse 4 Chrome Theme](https://github.com/jeeeyul/eclipse-themes), and set the line text color and line style into "dashed",
 You would'nt see dashed line in Pydev Editor, while in all other Eclipse's editor (such Java Editor) those styles are applied.
-![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/pyeditor_css_bug3.png)
+![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/pyeditor_css_bug3.gif)
 ![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/pyeditor_css_bug2.png)
 
 IMHO, it's not limited to the line text color, nor Jeeyul plugin only...
