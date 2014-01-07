@@ -39,6 +39,17 @@ No special code added, but I've modify the resources (.PNG, .GIF)
 		<img src="https://raw.github.com/x2nie/Pydev/development/extra/pydev_newprojectwizard2.png" />      </td>
     </tr>
 
+    <tr style="border:none;">
+      <td style="vertical-align: top; padding-top: 10px; border: none;">
+* Python interpreter logo in PyDev Explorer and in perspective
+      </td>
+      <td style="vertical-align: top; padding-top: 10px; border: none;">
+
+      </td>
+      <td style="vertical-align: top; padding-top: 10px; border: none;">
+		<img src="https://raw.github.com/x2nie/Pydev/development/extra/python_icon_in_explorer.png" />      </td>
+    </tr>
+
 
   </tbody>
 </table>
