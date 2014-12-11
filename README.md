@@ -15,10 +15,10 @@ to be used in dark theme
 or dark background
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-		<img src="https://raw.github.com/x2nie/Pydev/development/extra/python_file_icon_bug.png" />
+		<img src="https://raw.github.com/x2nie/Pydev/iconic/extra/python_file_icon_bug.png" />
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-		<img src="https://raw.github.com/x2nie/Pydev/development/extra/python_file_icon_bugfixed.png" />
+		<img src="https://raw.github.com/x2nie/Pydev/iconic/extra/python_file_icon_bugfixed.png" />
       </td>
     </tr>
 
@@ -33,7 +33,7 @@ in New Project wizard
 
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-		<img src="https://raw.github.com/x2nie/Pydev/development/extra/pydev_newprojectwizard1.png" />      </td>
+		<img src="https://raw.github.com/x2nie/Pydev/iconic/extra/pydev_newprojectwizard1.png" />      </td>
     </tr>
 
     <tr style="border:none;">
@@ -51,7 +51,7 @@ New Project wizard
 
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-		<img src="https://raw.github.com/x2nie/Pydev/development/extra/pydev_newprojectwizard2.png" />      </td>
+		<img src="https://raw.github.com/x2nie/Pydev/iconic/extra/pydev_newprojectwizard2.png" />      </td>
     </tr>
 
     <tr style="border:none;">
@@ -64,7 +64,7 @@ and in perspective
 
       </td>
       <td style="vertical-align: top; padding-top: 10px; border: none;">
-		<img src="https://raw.github.com/x2nie/Pydev/development/extra/python_icon_in_explorer.png" />      </td>
+		<img src="https://raw.github.com/x2nie/Pydev/iconic/extra/python_icon_in_explorer.png" />      </td>
     </tr>
 
     <tr style="border:none;">
@@ -87,8 +87,8 @@ since the class "StyledText" has been changed into "StyledTextWithoutVerticalBar
 For example: 
 * If you are using CSS/Style enabled plugin like the famous [Jeeeyul's Eclipse 4 Chrome Theme](https://github.com/jeeeyul/eclipse-themes), and set the line text color and line style into "dashed",
 You would'nt see dashed line in Pydev Editor, while in all other Eclipse's editor (such Java Editor) those styles are applied.
-![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/pyeditor_css_bug3.gif)
-![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/pyeditor_css_bug2.png)
+![screenshot](https://raw.github.com/x2nie/Pydev/iconic/extra/pyeditor_css_bug3.gif)
+![screenshot](https://raw.github.com/x2nie/Pydev/iconic/extra/pyeditor_css_bug2.png)
 
 IMHO, it's not limited to the line text color, nor Jeeyul plugin only...
 It would occured in all plugin that look for "StyleText" class name like for hooking the Theme/CSS.
@@ -102,7 +102,7 @@ It would occured in all plugin that look for "StyleText" class name like for hoo
 
 Oke, below is what should Pydev has. 
 
-![screenshot](https://raw.github.com/x2nie/Pydev/development/extra/pyeditor_css_bug.png)
+![screenshot](https://raw.github.com/x2nie/Pydev/iconic/extra/pyeditor_css_bug.png)
 
 This is done by applying the solution number 2 above.
 
